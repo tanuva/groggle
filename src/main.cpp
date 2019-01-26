@@ -1,8 +1,7 @@
-#include "audiodecoder.h"
+//#include "audiodecoder.h"
 #include "spectrum.h"
 #include "timer.h"
 
-#include <ao/ao.h>
 #include <fftw3.h>
 #include <ola/DmxBuffer.h>
 #include <ola/Logging.h>
@@ -17,6 +16,10 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+
+#include <SDL.h>
+#include <SDL_audio.h>
+#include <SDL_log.h>
 
 using namespace groggel;
 
@@ -94,29 +97,41 @@ void sendSpectrum(const Spectrum spectrum)
 static const int INPUT_SAMPLERATE = 44100;
 static const int FRAME_SIZE = 1024;
 
+struct AudioMetadata
+{
+    SDL_AudioDeviceID audioDeviceID;
+    SDL_AudioSpec fileSpec;
+    uint8_t *data = nullptr;
+    uint32_t dataSize = 0;
+    float duration = 0;
+    std::atomic<uint32_t> position;
+    //uint32_t position;
+};
+AudioMetadata meta;
+
 static inline float magnitude(const float f[])
 {
     return sqrt(pow(f[0], 2) + pow(f[1], 2));
 }
 
-Spectrum transform(const int16_t data[], const size_t dataSize)
+Spectrum transform(const int16_t data[], const size_t sampleCount)
 {
-    assert(dataSize <= 2048);
+    assert(sampleCount <= 2048);
 
-    const size_t outSize = dataSize / 2 + 1;
+    const size_t outSize = sampleCount / 2 + 1;
     fftwf_plan p;
-    p = fftwf_plan_dft_r2c_1d(dataSize, in, out, FFTW_ESTIMATE);
+    p = fftwf_plan_dft_r2c_1d(sampleCount, in, out, FFTW_ESTIMATE);
 
     // plan_dft_r2c modifies the input array, *must* copy here!
-    for (size_t i = 0; i < dataSize; i++) {
-        in[i] = data[i] / (float)std::numeric_limits<int16_t>::max();
+    for (size_t i = 0; i < sampleCount; i++) {
+        in[i] = data[i * meta.fileSpec.channels] / (float)std::numeric_limits<int16_t>::max();
     }
 
     fftwf_execute(p);
 
     // "Realize" and normalize the result
     std::vector<float> normOut(outSize);
-    const float scaleFactor = dataSize / 2.0f;
+    const float scaleFactor = sampleCount / 2.0f;
 
     for (size_t i = 0; i < outSize; i++) {
         normOut[i] = /*log(*/magnitude(out[i]) / scaleFactor;
@@ -130,47 +145,28 @@ Spectrum transform(const int16_t data[], const size_t dataSize)
 
     // Print some results
     {
-        const int freqStep = floor(INPUT_SAMPLERATE / (float)dataSize);
-
-        /*std::cout << "Freq:\t\tMag:" << std::endl;
-        for (int i = 0; i * freqStep < 1024; i += 1) {
-            std::cout << std::setfill('0') << std::setw(5) << i * freqStep << " Hz\t" << magnitude(out[i]) << ' ' << normOut[i] << std::endl;
-        }
-        std::cout << std::endl;*/
-
-        // For pasting into WA
-        /*std::cout << "Mag:\n";
-        for (int i = 0; i < dataSize / 2 + 1; i++) {
-            std::cout << magnitude(out[i][0], out[i][1]) << ',';
-        }
-        std::cout << std::endl;*/
+        //const int freqStep = floor(INPUT_SAMPLERATE / (float)sampleCount);
     }
 
     fftwf_destroy_plan(p);
     return spectrum;
 }
 
-void audiotest(const int16_t data[], const size_t dataSize, const float duration)
+void lightLoop(const int16_t data[], const uint32_t dataSize, const float duration)
 {
     const int freqStep = floor(INPUT_SAMPLERATE / (float)FRAME_SIZE);
-    std::cout << "Freq min: " << freqStep << " Hz max: " << FRAME_SIZE / 2 * freqStep << " Hz\n";
+    SDL_Log("Freq: %i Hz - %i Hz", freqStep, FRAME_SIZE / 2 * freqStep);
 
     // FFTW input/output buffers are recycled
     const size_t FOURIER_BUFSIZE = 2048;
     in = (float*) fftwf_malloc(sizeof(float) * FOURIER_BUFSIZE);
     out = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * FOURIER_BUFSIZE / 2 + 1);
 
-    const long long S_TO_NS = 1000 * 1000 * 1000;
-    static const long long durationNs = duration * S_TO_NS;
-
     // "Playback" timing
     Timer timer(duration /*s*/, 30 /*Hz*/);
     timer.setCallback([data, dataSize](const long long elapsed) {
-        const float elapsedPerc = fmax(0.0f, fmin(elapsed / (float)durationNs, 100.0f));
-        const size_t dataPos = round(fmin(dataSize * elapsedPerc,
-                                          dataSize - FRAME_SIZE)); // dataPos <= (dataSize - FRAME_SIZE)
+        const size_t dataPos = std::min(meta.position.load() / 2, dataSize - FRAME_SIZE * meta.fileSpec.channels);
         const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE);
-        //std::cout << "Elapsed: " << elapsed / S_TO_NS  << " s\n";
         sendSpectrum(spectrum);
     });
     timer.run();
@@ -178,68 +174,98 @@ void audiotest(const int16_t data[], const size_t dataSize, const float duration
     fftwf_free(out);
     fftwf_free(in);
 
+    SDL_Log("Light thread done.");
     blackout();
 }
 
-void play(int16_t data[], size_t dataSize, ao_sample_format *sampleFormat)
+void audioCallback(void *userData, uint8_t *stream, int bufferSize)
 {
-    const int driverId = ao_default_driver_id();
-    if (driverId < 0) {
-        std::cerr << "libao couldn't open the default audio driver\n";
-        return;
-    }
-
-    ao_device *outputDevice = ao_open_live(driverId, sampleFormat, NULL);
-    // Need to "duplicate" the data, libao reads it as 8 bit chunks!
-    const int result = ao_play(outputDevice, (char*)data, dataSize * 2);
+    AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
+    const uint32_t count = std::min(static_cast<uint32_t>(bufferSize),
+                                    meta->dataSize - meta->position);
+    memcpy(stream, &meta->data[meta->position], count);
+    //SDL_Log("Audio pos: %f", meta->position / (float)meta->dataSize);
+    meta->position += count;
 }
-#include <unistd.h>
+
+void cleanup()
+{
+    SDL_Quit();
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        std::cerr << "argc != 2\n";
-        return -1;
+    if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+        SDL_Log("SDL_Init failed: %s", SDL_GetError());
     }
+    atexit(&cleanup);
 
     std::string fileName(argv[1]);
-
-    // TODO Average both channels (or support stereo lighting!)
-    int16_t *data = nullptr;
-    size_t dataSize = 0;
-    float duration = 0;
-    if (decode_audio_file(fileName.c_str(), &data, &dataSize, &duration) != 0) {
-        std::cerr << "Failed to decode the audio file\n";
+    if (SDL_LoadWAV(fileName.c_str(), &meta.fileSpec, &meta.data, &meta.dataSize) == 0) {
+        SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
         return -1;
     }
-    std::cout << "Read " << duration << " s (" << dataSize << " bytes) of audio data\n";
 
-    if (dataSize == 0) {
-        std::cerr << "dataSize = 0, bailing out!\n";
+    // Data is stored as uint8_t but might actually be uint16_t, thus dataSize
+    // needs to be divided by 2 to get the sample count.
+    const int sampleSizeFactor = SDL_AUDIO_BITSIZE(meta.fileSpec.format) / 8;
+    meta.duration = (float)meta.dataSize / sampleSizeFactor / (float)meta.fileSpec.channels / (float)meta.fileSpec.freq;
+
+    SDL_Log("SDL says freq: %i format: %i channels: %i samples: %i",
+            meta.fileSpec.freq,
+            meta.fileSpec.format,
+            meta.fileSpec.channels,
+            meta.fileSpec.samples);
+    SDL_Log("Length: %f s (%i bytes) sample size: %i LE: %i",
+            meta.duration,
+            meta.dataSize,
+            SDL_AUDIO_MASK_BITSIZE & meta.fileSpec.format,
+            SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format));
+
+    if (SDL_AUDIO_BITSIZE(meta.fileSpec.format) != 16
+        || !SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format)
+        || !SDL_AUDIO_ISSIGNED(meta.fileSpec.format)) {
+        SDL_Log("Input is not S16LE wav!");
+        return -1;
+    }
+
+    SDL_Log("Audio Devices:");
+    for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
+        SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, false));
+    }
+    std::string audioDeviceName = SDL_GetAudioDeviceName(0, false);
+
+    SDL_AudioSpec have;
+    SDL_AudioSpec want;
+    SDL_zero(want); // O rly?
+    want.freq = meta.fileSpec.freq;
+    want.format = meta.fileSpec.format;
+    want.channels = meta.fileSpec.channels;
+    want.callback = &audioCallback;
+    want.userdata = &meta;
+
+    meta.audioDeviceID = SDL_OpenAudioDevice(audioDeviceName.c_str(), false, &want, &have, 0);
+    if (meta.audioDeviceID == 0) {
+        SDL_Log("Error opening audio device");
         return -1;
     }
 
     dmxinit();
-    atexit(&blackout);
+    //atexit(&blackout);
 
-    // Set up audio output
-    ao_initialize();
-
-    ao_sample_format sampleFormat;
-    sampleFormat.bits = 16;
-    sampleFormat.rate = INPUT_SAMPLERATE; // Unify with audio decoding
-    sampleFormat.channels = 1;
-    sampleFormat.byte_format = AO_FMT_NATIVE;
-    sampleFormat.matrix = 0;
-
-    // Launch the player thread
-    std::thread playerThread(play, data, dataSize, &sampleFormat);
+    // Launch the lighting thread
+    // TODO Store byte and sample dataSizes and positions separately! (Compute latter from former...)
+    std::thread lightThread(lightLoop,
+                            reinterpret_cast<int16_t *>(meta.data),
+                            static_cast<size_t>(meta.dataSize / 2), // Casting int8 -> int16 halves dataSize as well!
+                            meta.duration);
 
     // Main thread
-    //usleep(50 * 1000);
-    audiotest(data, dataSize, duration);
+    //audiotest(data, dataSize, duration);
 
-    playerThread.join();
-    ao_shutdown();
-
+    SDL_PauseAudioDevice(meta.audioDeviceID, 0);
+    SDL_Delay(meta.duration * 1000);
+    SDL_CloseAudioDevice(meta.audioDeviceID);
+    lightThread.join();
     return 0;
 }

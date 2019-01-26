@@ -4,7 +4,7 @@ project (groggel)
 set (CMAKE_CXX_STANDARD 14)
 
 add_executable (groggel
-    src/audiodecoder.cpp
+    #src/audiodecoder.cpp
     src/main.cpp
     src/spectrum.cpp
     src/timer.cpp
@@ -14,6 +14,11 @@ add_executable (groggel
 # ============
 
 find_package(PkgConfig REQUIRED)
+
+# SDL2
+find_package(SDL2 CONFIG REQUIRED)
+target_include_directories(groggel PUBLIC ${SDL2_INCLUDE_DIRS})
+target_link_libraries(groggel ${SDL2_LIBRARIES})
 
 # OLA
 if (APPLE)
@@ -29,38 +34,6 @@ else (APPLE)
     target_include_directories(groggel PUBLIC ${OLA_INCLUDE_DIRS})
     target_compile_options(groggel PUBLIC ${OLA_CFLAGS_OTHER})
 endif (APPLE)
-
-# Audio file decoding
-# TODO Find libs directly via cmake! (also above...)
-pkg_check_modules(LIBAVFORMAT REQUIRED libavformat)
-target_link_libraries(groggel -L${LIBAVFORMAT_LIBRARY_DIRS} ${LIBAVFORMAT_LIBRARIES})
-target_include_directories(groggel PUBLIC ${LIBAVFORMAT_INCLUDE_DIRS})
-target_compile_options(groggel PUBLIC ${LIBAVFORMAT_CFLAGS_OTHER})
-
-pkg_check_modules(LIBAVFILTER REQUIRED libavfilter)
-target_link_libraries(groggel -L${LIBAVFILTER_LIBRARY_DIRS} ${LIBAVFILTER_LIBRARIES})
-target_include_directories(groggel PUBLIC ${LIBAVFILTER_INCLUDE_DIRS})
-target_compile_options(groggel PUBLIC ${LIBAVFILTER_CFLAGS_OTHER})
-
-pkg_check_modules(LIBAVCODEC REQUIRED libavcodec)
-target_link_libraries(groggel -L${LIBAVCODEC_LIBRARY_DIRS} ${LIBAVCODEC_LIBRARIES})
-target_include_directories(groggel PUBLIC ${LIBAVCODEC_INCLUDE_DIRS})
-target_compile_options(groggel PUBLIC ${LIBAVCODEC_CFLAGS_OTHER})
-
-pkg_check_modules(LIBAVRESAMPLE REQUIRED libavresample)
-target_link_libraries(groggel -L${LIBAVRESAMPLE_LIBRARY_DIRS} ${LIBAVRESAMPLE_LIBRARIES})
-target_include_directories(groggel PUBLIC ${LIBAVRESAMPLE_INCLUDE_DIRS})
-target_compile_options(groggel PUBLIC ${LIBAVRESAMPLE_CFLAGS_OTHER})
-
-pkg_check_modules(LIBSWRESAMPLE REQUIRED libswresample)
-target_link_libraries(groggel -L${LIBSWRESAMPLE_LIBRARY_DIRS} ${LIBSWRESAMPLE_LIBRARIES})
-target_include_directories(groggel PUBLIC ${LIBSWRESAMPLE_INCLUDE_DIRS})
-target_compile_options(groggel PUBLIC ${LIBSWRESAMPLE_CFLAGS_OTHER})
-
-# Audio playback
-# TODO find_library? Doesn't work with target_link_libraries atm...
-target_link_libraries(groggel -L/usr/local/lib -lao)
-target_include_directories(groggel PUBLIC /usr/local/include)
 
 # fftw3
 if (APPLE)
