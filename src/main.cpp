@@ -71,14 +71,18 @@ void sendSpectrum(const Spectrum spectrum)
      * 1-3: RGB
      * 6: Dimmer
      */
+
+    /* Ideas:
+     * - Beat to white, decay to color (or vice versa)
+     */
     static const int NUM_COLORS = 12;
-    static float hsl[3] {0, 1.0f, 0.5f};
+    static float hsl[3] {0.8f, 1.0f, 0.5f};
 
     static float lastVal;
     float val = spectrum.get(Band::LOW);
     if ( val > lastVal ) {
         lastVal = val;
-        hsl[0] += 360 / NUM_COLORS;
+        //hsl[0] += 360 / NUM_COLORS;
     } else {
         lastVal *= 0.9f;
         val = lastVal;
