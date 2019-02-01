@@ -174,10 +174,7 @@ Spectrum transform(const int16_t data[], const size_t sampleCount)
     spectrum.add(Band::MID, normOut[10]);
     spectrum.add(Band::HIGH, normOut[20]);
 
-    // Print some results
-    {
-        //const int freqStep = floor(INPUT_SAMPLERATE / (float)sampleCount);
-    }
+    // TODO Print something like a graphic equalizer? Render with SDL?
 
     fftwf_destroy_plan(p);
     return spectrum;
@@ -205,8 +202,8 @@ void lightLoop(const int16_t data[], const uint32_t dataSize, const float durati
     fftwf_free(out);
     fftwf_free(in);
 
-    SDL_Log("Light thread done.");
     blackout();
+    SDL_Log("Light thread done.");
 }
 
 void audioCallback(void *userData, uint8_t *stream, int bufferSize)
@@ -242,11 +239,11 @@ int main(int argc, char **argv)
     const int sampleSizeFactor = SDL_AUDIO_BITSIZE(meta.fileSpec.format) / 8;
     meta.duration = (float)meta.dataSize / sampleSizeFactor / (float)meta.fileSpec.channels / (float)meta.fileSpec.freq;
 
-    SDL_Log("SDL says freq: %i format: %i channels: %i samples: %i",
+    /*SDL_Log("SDL says freq: %i format: %i channels: %i samples: %i",
             meta.fileSpec.freq,
             meta.fileSpec.format,
             meta.fileSpec.channels,
-            meta.fileSpec.samples);
+            meta.fileSpec.samples);*/
     SDL_Log("Length: %f s (%i bytes) sample size: %i LE: %i",
             meta.duration,
             meta.dataSize,
@@ -282,7 +279,6 @@ int main(int argc, char **argv)
     }
 
     dmxinit();
-    //atexit(&blackout);
 
     // Launch the lighting thread
     // TODO Store byte and sample dataSizes and positions separately! (Compute latter from former...)
@@ -292,8 +288,6 @@ int main(int argc, char **argv)
                             meta.duration);
 
     // Main thread
-    //audiotest(data, dataSize, duration);
-
     SDL_PauseAudioDevice(meta.audioDeviceID, 0);
     SDL_Delay(meta.duration * 1000);
     SDL_CloseAudioDevice(meta.audioDeviceID);
