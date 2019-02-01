@@ -123,11 +123,6 @@ void sendSpectrum(const Spectrum spectrum)
     sendValue(ADJ + 2, rgb[2]);
 }
 
-// Try to lower the sample rate if the pi is too slow
-// These are defined by the output code. Take defines to the header.
-static const int INPUT_SAMPLERATE = 44100;
-static const int FRAME_SIZE = 1024;
-
 struct AudioMetadata
 {
     SDL_AudioDeviceID audioDeviceID;
@@ -182,7 +177,10 @@ Spectrum transform(const int16_t data[], const size_t sampleCount)
 
 void lightLoop(const int16_t data[], const uint32_t dataSize, const float duration)
 {
-    const int freqStep = floor(INPUT_SAMPLERATE / (float)FRAME_SIZE);
+    // The amount of frames analyzed at a time. Also determines the frequency
+    // resolution of the Fourier transformation.
+    static const int FRAME_SIZE = 1024;
+    const int freqStep = floor(meta.fileSpec.freq / (float)FRAME_SIZE);
     SDL_Log("Freq: %i Hz - %i Hz", freqStep, FRAME_SIZE / 2 * freqStep);
 
     // FFTW input/output buffers are recycled
