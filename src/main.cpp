@@ -29,9 +29,6 @@ ola::DmxBuffer buffer;
 
 const int ADJ = 69;
 
-float *in;
-fftwf_complex *out;
-
 void blackout()
 {
     buffer.Blackout();
@@ -140,11 +137,14 @@ static inline float magnitude(const float f[])
     return sqrt(pow(f[0], 2) + pow(f[1], 2));
 }
 
-Spectrum transform(const int16_t data[], const size_t sampleCount)
+/**
+ * @param data The audio data to transform in s16le format
+ * @param sampleCount Length of the audio data in samples
+ * @param in Preallocated FFTW input array
+ * @param out Preallocated FFTW output array
+ */
+static Spectrum transform(const int16_t data[], const size_t sampleCount, float *in, fftwf_complex *out)
 {
-    assert(sampleCount <= 2048);
-
-    const size_t outSize = sampleCount / 2 + 1;
     fftwf_plan p;
     p = fftwf_plan_dft_r2c_1d(sampleCount, in, out, FFTW_ESTIMATE);
 
@@ -155,19 +155,14 @@ Spectrum transform(const int16_t data[], const size_t sampleCount)
 
     fftwf_execute(p);
 
-    // "Realize" and normalize the result
-    std::vector<float> normOut(outSize);
-    const float scaleFactor = sampleCount / 2.0f;
+    // "Realize", normalize and store the result
+    // Scaling: http://fftw.org/fftw3_doc/The-1d-Discrete-Fourier-Transform-_0028DFT_0029.html#The-1d-Discrete-Fourier-Transform-_0028DFT_0029
+    const float scaleFactor = 2.0f / sampleCount;
 
-    for (size_t i = 0; i < outSize; i++) {
-        normOut[i] = /*log(*/magnitude(out[i]) / scaleFactor;
-    }
-
-    // TODO Compute frequency offsets!
     Spectrum spectrum;
-    spectrum.add(Band::LOW, normOut[1]);
-    spectrum.add(Band::MID, normOut[10]);
-    spectrum.add(Band::HIGH, normOut[20]);
+    spectrum.add(Band::LOW, magnitude(out[1]) * scaleFactor);
+    spectrum.add(Band::MID, magnitude(out[10]) * scaleFactor);
+    spectrum.add(Band::HIGH, magnitude(out[20]) * scaleFactor);
 
     // TODO Print something like a graphic equalizer? Render with SDL?
 
@@ -184,15 +179,14 @@ void lightLoop(const int16_t data[], const uint32_t dataSize, const float durati
     SDL_Log("Freq: %i Hz - %i Hz", freqStep, FRAME_SIZE / 2 * freqStep);
 
     // FFTW input/output buffers are recycled
-    const size_t FOURIER_BUFSIZE = 2048;
-    in = (float*) fftwf_malloc(sizeof(float) * FOURIER_BUFSIZE);
-    out = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * FOURIER_BUFSIZE / 2 + 1);
+    float *in = (float*)fftwf_malloc(sizeof(float) * FRAME_SIZE);
+    fftwf_complex *out = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * FRAME_SIZE / 2 + 1);
 
     // "Playback" timing
     Timer timer(duration /*s*/, 30 /*Hz*/);
-    timer.setCallback([data, dataSize](const long long elapsed) {
+    timer.setCallback([data, dataSize, in, out](const long long elapsed) {
         const size_t dataPos = std::min(meta.position.load() / 2, dataSize - FRAME_SIZE * meta.fileSpec.channels);
-        const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE);
+        const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, in, out);
         sendSpectrum(spectrum);
     });
     timer.run();
