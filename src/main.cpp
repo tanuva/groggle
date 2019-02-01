@@ -44,7 +44,7 @@ void dmxinit()
 
     // Setup the client, this connects to the server
     if (!olaClient->Setup()) {
-        std::cerr << "Setup failed" << std::endl;
+        SDL_Log("Setup failed");
         return;
     }
 
@@ -61,7 +61,7 @@ void sendValue(const int channel, const float v)
     buffer.SetChannel(channel, native);
 
     if (!olaClient->SendDmx(universe, buffer)) {
-        std::cout << "Send DMX failed" << std::endl;
+        SDL_Log("SendDmx() failed");
     }
 }
 
