@@ -4,7 +4,6 @@ project (groggel)
 set (CMAKE_CXX_STANDARD 14)
 
 add_executable (groggel
-    #src/audiodecoder.cpp
     src/main.cpp
     src/spectrum.cpp
     src/timer.cpp
