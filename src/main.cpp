@@ -186,6 +186,46 @@ void audioCallback(void *userData, uint8_t *stream, int bufferSize)
     meta->position += count;
 }
 
+bool loadFile(const std::string fileName)
+{
+    if (SDL_LoadWAV(fileName.c_str(), &meta.fileSpec, &meta.data, &meta.dataSize) == 0) {
+        return false;
+    }
+
+    if (SDL_AUDIO_BITSIZE(meta.fileSpec.format) != 16
+        || !SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format)
+        || !SDL_AUDIO_ISSIGNED(meta.fileSpec.format)) {
+        SDL_Log("Input is not S16LE wav!");
+        // Set SDL-internal error here?
+        return false;
+    }
+
+    // Data is stored as uint8_t but might actually be uint16_t, thus dataSize
+    // needs to be divided by 2 to get the sample count.
+    const int sampleSizeFactor = SDL_AUDIO_BITSIZE(meta.fileSpec.format) / 8;
+    meta.duration = (float)meta.dataSize / sampleSizeFactor / (float)meta.fileSpec.channels / (float)meta.fileSpec.freq;
+    return true;
+}
+
+bool openOutputDevice(const std::string name)
+{
+    SDL_AudioSpec have;
+    SDL_AudioSpec want;
+    SDL_zero(want); // O rly?
+    want.freq = meta.fileSpec.freq;
+    want.format = meta.fileSpec.format;
+    want.channels = meta.fileSpec.channels;
+    want.callback = &audioCallback;
+    want.userdata = &meta;
+
+    meta.audioDeviceID = SDL_OpenAudioDevice(name.c_str(), false, &want, &have, 0);
+    if (meta.audioDeviceID == 0) {
+        return false;
+    }
+
+    return true;
+}
+
 void cleanup()
 {
     SDL_Quit();
@@ -199,15 +239,10 @@ int main(int argc, char **argv)
     atexit(&cleanup);
 
     std::string fileName(argv[1]);
-    if (SDL_LoadWAV(fileName.c_str(), &meta.fileSpec, &meta.data, &meta.dataSize) == 0) {
+    if (!loadFile(fileName)) {
         SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
         return -1;
     }
-
-    // Data is stored as uint8_t but might actually be uint16_t, thus dataSize
-    // needs to be divided by 2 to get the sample count.
-    const int sampleSizeFactor = SDL_AUDIO_BITSIZE(meta.fileSpec.format) / 8;
-    meta.duration = (float)meta.dataSize / sampleSizeFactor / (float)meta.fileSpec.channels / (float)meta.fileSpec.freq;
 
     /*SDL_Log("SDL says freq: %i format: %i channels: %i samples: %i",
             meta.fileSpec.freq,
@@ -220,31 +255,14 @@ int main(int argc, char **argv)
             SDL_AUDIO_MASK_BITSIZE & meta.fileSpec.format,
             SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format));
 
-    if (SDL_AUDIO_BITSIZE(meta.fileSpec.format) != 16
-        || !SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format)
-        || !SDL_AUDIO_ISSIGNED(meta.fileSpec.format)) {
-        SDL_Log("Input is not S16LE wav!");
-        return -1;
-    }
-
-    SDL_Log("Audio Devices:");
+    SDL_Log("Output Devices:");
     for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
         SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, false));
     }
-    std::string audioDeviceName = SDL_GetAudioDeviceName(0, false);
 
-    SDL_AudioSpec have;
-    SDL_AudioSpec want;
-    SDL_zero(want); // O rly?
-    want.freq = meta.fileSpec.freq;
-    want.format = meta.fileSpec.format;
-    want.channels = meta.fileSpec.channels;
-    want.callback = &audioCallback;
-    want.userdata = &meta;
 
-    meta.audioDeviceID = SDL_OpenAudioDevice(audioDeviceName.c_str(), false, &want, &have, 0);
-    if (meta.audioDeviceID == 0) {
-        SDL_Log("Error opening audio device");
+    if (openOutputDevice(SDL_GetAudioDeviceName(0, false))) {
+        SDL_Log("Error opening audio device: %s", SDL_GetError());
         return -1;
     }
 
