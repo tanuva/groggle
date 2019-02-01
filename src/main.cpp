@@ -1,25 +1,24 @@
-//#include "audiodecoder.h"
+//#include "light.h"
 #include "spectrum.h"
 #include "timer.h"
 
 #include <fftw3.h>
+
 #include <ola/DmxBuffer.h>
 #include <ola/Logging.h>
 #include <ola/client/StreamingClient.h>
 
-#include <algorithm> // min, max
-#include <cstdlib>
-#include <cmath>
-#include <deque>
-#include <limits>
-#include <thread>
-#include <iomanip>
-#include <iostream>
-#include <vector>
-
 #include <SDL.h>
 #include <SDL_audio.h>
 #include <SDL_log.h>
+
+#include <algorithm> // min, max
+#include <cmath>
+#include <cstdlib>
+#include <thread>
+#include <iomanip>
+#include <iostream>
+#include <limits>
 
 using namespace groggel;
 
