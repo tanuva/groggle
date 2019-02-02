@@ -204,6 +204,17 @@ bool loadFile(const std::string fileName)
     // needs to be divided by 2 to get the sample count.
     const int sampleSizeFactor = SDL_AUDIO_BITSIZE(meta.fileSpec.format) / 8;
     meta.duration = (float)meta.dataSize / sampleSizeFactor / (float)meta.fileSpec.channels / (float)meta.fileSpec.freq;
+
+    /*SDL_Log("SDL says freq: %i format: %i channels: %i samples: %i",
+            meta.fileSpec.freq,
+            meta.fileSpec.format,
+            meta.fileSpec.channels,
+            meta.fileSpec.samples);*/
+    SDL_Log("Length: %f s (%i bytes) sample size: %i LE: %i",
+            meta.duration,
+            meta.dataSize,
+            SDL_AUDIO_MASK_BITSIZE & meta.fileSpec.format,
+            SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format));
     return true;
 }
 
@@ -243,17 +254,6 @@ int main(int argc, char **argv)
         SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
         return -1;
     }
-
-    /*SDL_Log("SDL says freq: %i format: %i channels: %i samples: %i",
-            meta.fileSpec.freq,
-            meta.fileSpec.format,
-            meta.fileSpec.channels,
-            meta.fileSpec.samples);*/
-    SDL_Log("Length: %f s (%i bytes) sample size: %i LE: %i",
-            meta.duration,
-            meta.dataSize,
-            SDL_AUDIO_MASK_BITSIZE & meta.fileSpec.format,
-            SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format));
 
     SDL_Log("Output Devices:");
     for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
