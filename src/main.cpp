@@ -176,7 +176,7 @@ void lightLoop(const int16_t data[], const uint32_t dataSize, const float durati
     SDL_Log("Light thread done.");
 }
 
-void audioCallback(void *userData, uint8_t *stream, int bufferSize)
+void outputCallback(void *userData, uint8_t *stream, int bufferSize)
 {
     AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
     const uint32_t count = std::min(static_cast<uint32_t>(bufferSize),
@@ -226,7 +226,7 @@ bool openOutputDevice(const std::string name)
     want.freq = meta.fileSpec.freq;
     want.format = meta.fileSpec.format;
     want.channels = meta.fileSpec.channels;
-    want.callback = &audioCallback;
+    want.callback = &outputCallback;
     want.userdata = &meta;
 
     meta.audioDeviceID = SDL_OpenAudioDevice(name.c_str(), false, &want, &have, 0);
