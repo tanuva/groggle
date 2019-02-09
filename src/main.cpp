@@ -29,6 +29,16 @@ ola::DmxBuffer buffer;
 
 const int ADJ = 69;
 
+struct Options
+{
+    enum class InputType {
+        FILE,
+        DEVICE
+    };
+    InputType input;
+};
+Options options;
+
 void blackout()
 {
     buffer.Blackout();
@@ -181,6 +191,16 @@ void lightLoop(AudioMetadata *meta)
     SDL_Log("Light thread done.");
 }
 
+void inputCallback(void *userData, uint8_t *stream, int bufferSize)
+{
+    AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
+    meta->mutex.lock();
+    memcpy(meta->data, stream, bufferSize);
+    meta->dataSize = bufferSize;
+    meta->position = 0;
+    meta->mutex.unlock();
+}
+
 void outputCallback(void *userData, uint8_t *stream, int bufferSize)
 {
     AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
@@ -227,6 +247,42 @@ bool loadFile(const std::string fileName)
     return true;
 }
 
+bool openInputDevice(const std::string name)
+{
+    SDL_AudioSpec have;
+    SDL_AudioSpec want;
+    SDL_zero(want);
+    want.freq = 44100;
+    want.format = AUDIO_S16LSB;
+    want.samples = 1024; // FRAME_SIZE?
+    want.channels = 1;
+    want.callback = &inputCallback;
+    want.userdata = &meta;
+
+    meta.mutex.lock();
+    meta.audioDeviceID = SDL_OpenAudioDevice(name.c_str(), true, &want, &have, 0);
+    if (meta.audioDeviceID == 0) {
+        return false;
+    }
+
+    meta.fileSpec = have;
+    meta.duration = 0; // infinity
+    meta.data = new uint8_t[have.samples * 2]; // samples != bytes
+    meta.mutex.unlock();
+
+    SDL_PauseAudioDevice(meta.audioDeviceID, 0);
+    return true;
+}
+
+void closeInputDevice()
+{
+    meta.mutex.lock();
+    SDL_PauseAudioDevice(meta.audioDeviceID, 1);
+    SDL_CloseAudioDevice(meta.audioDeviceID);
+    delete[] meta.data;
+    meta.mutex.unlock();
+}
+
 bool openOutputDevice(const std::string name)
 {
     meta.mutex.lock();
@@ -244,8 +300,30 @@ bool openOutputDevice(const std::string name)
         return false;
     }
 
+    SDL_PauseAudioDevice(meta.audioDeviceID, 0);
     meta.mutex.unlock();
     return true;
+}
+
+void closeOutputDevice()
+{
+    meta.mutex.lock();
+    SDL_PauseAudioDevice(meta.audioDeviceID, 1);
+    SDL_CloseAudioDevice(meta.audioDeviceID);
+    meta.mutex.unlock();
+}
+
+void printAudioDevices()
+{
+    SDL_Log("Output Devices:");
+    for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
+        SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, false));
+    }
+
+    SDL_Log("Input Devices:");
+    for (int i = 0; i < SDL_GetNumAudioDevices(true); i++) {
+        SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, true));
+    }
 }
 
 void cleanup()
@@ -260,21 +338,28 @@ int main(int argc, char **argv)
     }
     atexit(&cleanup);
 
-    std::string fileName(argv[1]);
-    if (!loadFile(fileName)) {
-        SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
-        return -1;
-    }
+    printAudioDevices();
 
-    SDL_Log("Output Devices:");
-    for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
-        SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, false));
-    }
+    if (argc == 1) {
+        options.input = Options::InputType::DEVICE;
 
+        if (!openInputDevice(SDL_GetAudioDeviceName(1, true))) {
+            SDL_Log("Error opening audio device: %s", SDL_GetError());
+            return -1;
+        }
+    } else if (argc == 2) {
+        options.input = Options::InputType::FILE;
 
-    if (openOutputDevice(SDL_GetAudioDeviceName(0, false))) {
-        SDL_Log("Error opening audio device: %s", SDL_GetError());
-        return -1;
+        std::string fileName(argv[1]);
+        if (!loadFile(fileName)) {
+            SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
+            return -1;
+        }
+
+        if (!openOutputDevice(SDL_GetAudioDeviceName(0, false))) {
+            SDL_Log("Error opening audio device: %s", SDL_GetError());
+            return -1;
+        }
     }
 
     dmxinit();
@@ -283,10 +368,18 @@ int main(int argc, char **argv)
     // TODO Store byte and sample dataSizes and positions separately! (Compute latter from former...)
     std::thread lightThread(lightLoop, &meta);
 
-    // Main thread
-    SDL_PauseAudioDevice(meta.audioDeviceID, 0);
-    SDL_Delay(meta.duration * 1000);
-    SDL_CloseAudioDevice(meta.audioDeviceID);
-    lightThread.join();
+    switch (options.input) {
+    case Options::InputType::DEVICE:
+        lightThread.join(); // Wait for Godot non-blockingly
+        closeInputDevice();
+        break;
+    case Options::InputType::FILE:
+        SDL_Delay(meta.duration * 1000);
+        lightThread.join();
+        closeOutputDevice();
+        SDL_FreeWAV(meta.data);
+        break;
+    }
+
     return 0;
 }
