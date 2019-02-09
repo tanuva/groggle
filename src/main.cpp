@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <mutex>
 
 using namespace groggel;
 
@@ -100,13 +101,13 @@ void sendSpectrum(const Spectrum spectrum)
 
 struct AudioMetadata
 {
+    std::mutex mutex; // Used to lock the whole struct.
     SDL_AudioDeviceID audioDeviceID;
     SDL_AudioSpec fileSpec;
     uint8_t *data = nullptr;
-    uint32_t dataSize = 0;
-    float duration = 0;
-    std::atomic<uint32_t> position;
-    //uint32_t position;
+    uint32_t dataSize;
+    float duration;
+    uint32_t position;
 };
 AudioMetadata meta;
 
@@ -148,12 +149,12 @@ static Spectrum transform(const int16_t data[], const size_t sampleCount, float 
     return spectrum;
 }
 
-void lightLoop(const int16_t data[], const uint32_t dataSize, const float duration)
+void lightLoop(AudioMetadata *meta)
 {
     // The amount of frames analyzed at a time. Also determines the frequency
     // resolution of the Fourier transformation.
     static const int FRAME_SIZE = 1024;
-    const int freqStep = floor(meta.fileSpec.freq / (float)FRAME_SIZE);
+    const int freqStep = floor(meta->fileSpec.freq / (float)FRAME_SIZE);
     SDL_Log("Freq: %i Hz - %i Hz", freqStep, FRAME_SIZE / 2 * freqStep);
 
     // FFTW input/output buffers are recycled
@@ -161,10 +162,14 @@ void lightLoop(const int16_t data[], const uint32_t dataSize, const float durati
     fftwf_complex *out = (fftwf_complex*)fftwf_malloc(sizeof(fftwf_complex) * FRAME_SIZE / 2 + 1);
 
     // "Playback" timing
-    Timer timer(duration /*s*/, 30 /*Hz*/);
-    timer.setCallback([data, dataSize, in, out](const long long elapsed) {
-        const size_t dataPos = std::min(meta.position.load() / 2, dataSize - FRAME_SIZE * meta.fileSpec.channels);
+    Timer timer(meta->duration /*s*/, 30 /*Hz*/);
+    timer.setCallback([meta, in, out](const long long elapsed) {
+        meta->mutex.lock();
+        const int16_t *data = reinterpret_cast<int16_t*>(meta->data);
+        const uint32_t sampleCount = meta->dataSize / 2; // Casting int8 -> int16 halves dataSize as well!
+        const uint32_t dataPos = std::min(meta->position / 2, sampleCount - FRAME_SIZE * meta->fileSpec.channels);
         const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, in, out);
+        meta->mutex.unlock();
         sendSpectrum(spectrum);
     });
     timer.run();
@@ -179,15 +184,18 @@ void lightLoop(const int16_t data[], const uint32_t dataSize, const float durati
 void outputCallback(void *userData, uint8_t *stream, int bufferSize)
 {
     AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
+    meta->mutex.lock();
     const uint32_t count = std::min(static_cast<uint32_t>(bufferSize),
                                     meta->dataSize - meta->position);
     memcpy(stream, &meta->data[meta->position], count);
     //SDL_Log("Audio pos: %f", meta->position / (float)meta->dataSize);
     meta->position += count;
+    meta->mutex.unlock();
 }
 
 bool loadFile(const std::string fileName)
 {
+    meta.mutex.lock();
     if (SDL_LoadWAV(fileName.c_str(), &meta.fileSpec, &meta.data, &meta.dataSize) == 0) {
         return false;
     }
@@ -215,11 +223,13 @@ bool loadFile(const std::string fileName)
             meta.dataSize,
             SDL_AUDIO_MASK_BITSIZE & meta.fileSpec.format,
             SDL_AUDIO_ISLITTLEENDIAN(meta.fileSpec.format));
+    meta.mutex.unlock();
     return true;
 }
 
 bool openOutputDevice(const std::string name)
 {
+    meta.mutex.lock();
     SDL_AudioSpec have;
     SDL_AudioSpec want;
     SDL_zero(want); // O rly?
@@ -234,6 +244,7 @@ bool openOutputDevice(const std::string name)
         return false;
     }
 
+    meta.mutex.unlock();
     return true;
 }
 
@@ -270,10 +281,7 @@ int main(int argc, char **argv)
 
     // Launch the lighting thread
     // TODO Store byte and sample dataSizes and positions separately! (Compute latter from former...)
-    std::thread lightThread(lightLoop,
-                            reinterpret_cast<int16_t *>(meta.data),
-                            static_cast<size_t>(meta.dataSize / 2), // Casting int8 -> int16 halves dataSize as well!
-                            meta.duration);
+    std::thread lightThread(lightLoop, &meta);
 
     // Main thread
     SDL_PauseAudioDevice(meta.audioDeviceID, 0);
