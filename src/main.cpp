@@ -76,7 +76,7 @@ void sendSpectrum(const Spectrum spectrum)
      * - Beat to white, decay to color (or vice versa)
      */
     static const int NUM_COLORS = 12;
-    static float hsl[3] {0.8f, 1.0f, 0.5f};
+    static float hsl[3] {18.0f, 1.0f, 0.5f};
 
     static float lastVal;
     float val = spectrum.get(Band::LOW);
