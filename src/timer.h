@@ -16,11 +16,15 @@ public:
         m_tick = tick;
     }
     void run();
+    void stop() {
+        m_running = false;
+    }
 
 private:
     const long long S_TO_NS = 1000 * 1000 * 1000;
     const long long m_duration;
     const long long m_pulseInterval;
+    bool m_running = false;
     Callback m_tick = [](const long long) {};
 };
 

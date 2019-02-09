@@ -16,6 +16,8 @@ Timer::Timer(const float duration, const float frequency)
 
 void Timer::run()
 {
+    // TODO Support running *really* indefinitely. Reset 'start' every n minutes?
+    m_running = true;
     const auto start = steady_clock::now();
     long long elapsed = 0;
     long long elapsedAtNextPulse = m_pulseInterval;
@@ -41,6 +43,5 @@ void Timer::run()
         }
 
         usleep( 1 /*ms*/ * 1000 );
-        //usleep( 1 * 100 );
-    } while ( elapsed < m_duration );
+    } while ( m_duration > 0 ? elapsed < m_duration : m_running );
 }
