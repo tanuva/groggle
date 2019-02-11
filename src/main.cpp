@@ -415,6 +415,7 @@ int fileMain(std::thread lightThread, std::string fileName)
     lightThread.join();
     closeOutputDevice();
     SDL_FreeWAV(meta.data);
+    return 0;
 }
 
 void cleanup()
