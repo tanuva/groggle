@@ -410,6 +410,11 @@ int main(const int argc, const char **argv)
         return 0;
     }
 
+    dmxinit();
+
+    // Launch the lighting thread
+    std::thread lightThread(lightLoop, &meta);
+
     switch (options.input) {
     case Options::InputType::DEVICE: {
         std::string audioDeviceName = options.inputDevice;
@@ -421,6 +426,9 @@ int main(const int argc, const char **argv)
             SDL_Log("Error opening audio device: %s", SDL_GetError());
             return -1;
         }
+
+        lightThread.join(); // Wait for Godot non-blockingly
+        closeInputDevice();
         break;
     }
     case Options::InputType::FILE: {
@@ -435,27 +443,13 @@ int main(const int argc, const char **argv)
             SDL_Log("Error opening audio device: %s", SDL_GetError());
             return -1;
         }
-        break;
-    }
-    }
 
-    dmxinit();
-
-    // Launch the lighting thread
-    // TODO Store byte and sample dataSizes and positions separately! (Compute latter from former...)
-    std::thread lightThread(lightLoop, &meta);
-
-    switch (options.input) {
-    case Options::InputType::DEVICE:
-        lightThread.join(); // Wait for Godot non-blockingly
-        closeInputDevice();
-        break;
-    case Options::InputType::FILE:
         SDL_Delay(meta.duration * 1000);
         lightThread.join();
         closeOutputDevice();
         SDL_FreeWAV(meta.data);
         break;
+    }
     }
 
     return 0;
