@@ -4,10 +4,6 @@
 
 #include <fftw3.h>
 
-#include <ola/DmxBuffer.h>
-#include <ola/Logging.h>
-#include <ola/client/StreamingClient.h>
-
 #include <SDL.h>
 #include <SDL_audio.h>
 #include <SDL_log.h>
@@ -26,12 +22,6 @@
 using namespace groggel;
 using namespace TCLAP;
 
-const unsigned int universe = 1; // universe to use for sending data
-ola::client::StreamingClient *olaClient = nullptr;
-ola::DmxBuffer buffer;
-
-const int ADJ = 69;
-
 struct Options
 {
     enum class InputType {
@@ -45,76 +35,6 @@ struct Options
 
     bool listDevices;
 };
-
-void blackout()
-{
-    buffer.Blackout();
-    olaClient->SendDmx(universe, buffer);
-}
-
-void dmxinit()
-{
-    // turn on OLA logging
-    ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
-
-    // Create a new client.
-    olaClient = new ola::client::StreamingClient((ola::client::StreamingClient::Options()));
-
-    // Setup the client, this connects to the server
-    if (!olaClient->Setup()) {
-        SDL_Log("Setup failed");
-        return;
-    }
-
-    blackout();
-}
-
-void sendValue(const int channel, const float v)
-{
-    //ola::DmxBuffer buffer;
-    //buffer.Blackout(); // Don't overwrite previous settings!
-    const float clamped = round(std::min(std::max(v * 255, 0.0f), 255.0f));
-    const uint8_t native = static_cast<uint8_t>(clamped);
-    //std::cerr << "c: " << clamped << " n: " << (int)native << std::endl;
-    buffer.SetChannel(channel, native);
-
-    if (!olaClient->SendDmx(universe, buffer)) {
-        SDL_Log("SendDmx() failed");
-    }
-}
-
-void sendSpectrum(const Spectrum spectrum)
-{
-    /* Tripar:
-     * 1-3: RGB
-     * 6: Dimmer
-     */
-
-    /* Ideas:
-     * - Beat to white, decay to color (or vice versa)
-     */
-    static const int NUM_COLORS = 12;
-    static float hsl[3] {18.0f, 1.0f, 0.5f};
-
-    static float lastVal;
-    float val = spectrum.get(Band::LOW);
-    if ( val > lastVal ) {
-        lastVal = val;
-        //hsl[0] += 360 / NUM_COLORS;
-    } else {
-        lastVal *= 0.9f;
-        val = lastVal;
-    }
-
-    float rgb[3];
-    hslToRgb(hsl, rgb);
-
-    // TODO Prepare one DMX buffer per frame, don't send every time
-    sendValue(ADJ + 5, val);
-    sendValue(ADJ + 0, rgb[0]);
-    sendValue(ADJ + 1, rgb[1]);
-    sendValue(ADJ + 2, rgb[2]);
-}
 
 struct AudioMetadata
 {
@@ -197,14 +117,14 @@ void lightLoop(AudioMetadata *meta)
         const uint32_t dataPos = std::min(meta->position / 2, sampleCount - FRAME_SIZE * meta->fileSpec.channels);
         const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, in, out);
         meta->mutex.unlock();
-        sendSpectrum(spectrum);
+        light::sendSpectrum(spectrum);
     });
     timer.run();
 
     fftwf_free(out);
     fftwf_free(in);
 
-    blackout();
+    light::blackout();
     SDL_Log("Light thread done.");
 }
 
@@ -446,7 +366,7 @@ int main(const int argc, const char **argv)
         options.inputDevice = SDL_GetAudioDeviceName(0, true);
     }
 
-    dmxinit();
+    light::dmxinit();
 
     // Launch the lighting thread
     std::thread lightThread(lightLoop, &meta);
