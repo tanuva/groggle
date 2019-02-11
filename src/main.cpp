@@ -168,6 +168,15 @@ static Spectrum transform(const int16_t data[], const size_t sampleCount, float 
 
 void lightLoop(AudioMetadata *meta)
 {
+    // Hack. Wait for the first audio data to arrive so that we can compute the
+    // frequency data that is printed below.
+    bool ready = false;
+    do {
+        meta->mutex.lock();
+        ready = meta->dataSize > 0;
+        meta->mutex.unlock();
+    } while (!ready);
+
     // The amount of frames analyzed at a time. Also determines the frequency
     // resolution of the Fourier transformation.
     static const int FRAME_SIZE = 1024;
