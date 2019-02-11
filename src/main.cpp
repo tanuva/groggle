@@ -172,7 +172,8 @@ void lightLoop(AudioMetadata *meta)
     // resolution of the Fourier transformation.
     static const int FRAME_SIZE = 1024;
     const int freqStep = floor(meta->fileSpec.freq / (float)FRAME_SIZE);
-    SDL_Log("Freq: %i Hz - %i Hz", freqStep, FRAME_SIZE / 2 * freqStep);
+    SDL_Log("Frequency bucket size: %i Hz", freqStep);
+    SDL_Log("Max frequency: %i Hz", FRAME_SIZE / 2 * freqStep);
 
     // FFTW input/output buffers are recycled
     float *in = (float*)fftwf_malloc(sizeof(float) * FRAME_SIZE);
