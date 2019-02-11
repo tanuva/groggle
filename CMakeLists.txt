@@ -10,6 +10,8 @@ add_executable (groggel
     src/timer.cpp
 )
 
+target_include_directories (groggel PUBLIC 3rdparty/tclap-1.2.2/include)
+
 # Dependencies
 # ============
 

@@ -12,6 +12,8 @@
 #include <SDL_audio.h>
 #include <SDL_log.h>
 
+#include <tclap/CmdLine.h>
+
 #include <algorithm> // min, max
 #include <cmath>
 #include <cstdlib>
@@ -22,6 +24,7 @@
 #include <mutex>
 
 using namespace groggel;
+using namespace TCLAP;
 
 const unsigned int universe = 1; // universe to use for sending data
 ola::client::StreamingClient *olaClient = nullptr;
@@ -36,8 +39,12 @@ struct Options
         DEVICE
     };
     InputType input;
+
+    std::string fileName;
+    std::string inputDevice;
+
+    bool listDevices;
 };
-Options options;
 
 void blackout()
 {
@@ -326,33 +333,90 @@ void printAudioDevices()
     }
 }
 
+bool parseArgs(const int argc, const char **argv, Options *options)
+{
+    try {
+        // Define the command line object.
+        CmdLine cmd("", ' ', "0.1");
+
+        ValueArg<std::string> inputArg("i",
+                                       "input",
+                                       "Input device name",
+                                       false,
+                                       "",
+                                       "string");
+        cmd.add(inputArg);
+
+        SwitchArg devicesArg("l",
+                             "list-devices",
+                             "Lists the available input/output devices.",
+                             false);
+        cmd.add(devicesArg);
+
+        UnlabeledValueArg<std::string> fileNameArg("file",
+                                                   "Path to the audio file to play.",
+                                                   false,
+                                                   "",
+                                                   "string");
+        cmd.add(fileNameArg);
+
+        cmd.parse(argc, argv);
+        options->fileName = fileNameArg.getValue();
+        options->input = fileNameArg.isSet() ? Options::InputType::FILE : Options::InputType::DEVICE;
+        options->inputDevice = inputArg.getValue();
+        options->listDevices = devicesArg.getValue();
+
+        if (fileNameArg.isSet() && inputArg.isSet()) {
+            throw ArgException("Cannot set input file and input device at the same time.", "fileName");
+        }
+    } catch (ArgException &e) {
+        std::cerr << "Failed to parse command line: " << e.argId() << ": " << e.error() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 void cleanup()
 {
     SDL_Quit();
 }
 
-int main(int argc, char **argv)
+int main(const int argc, const char **argv)
 {
+    Options options;
+    if (!parseArgs(argc, argv, &options)) {
+        return -1;
+    }
+
     if (SDL_Init(SDL_INIT_AUDIO) != 0) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
     }
     atexit(&cleanup);
 
-    printAudioDevices();
+    if (options.listDevices) {
+        printAudioDevices();
+        return 0;
+    }
 
-    if (argc == 1) {
-        options.input = Options::InputType::DEVICE;
+    switch (options.input) {
+    case Options::InputType::DEVICE: {
+        std::string audioDeviceName = options.inputDevice;
+        if (audioDeviceName.size() == 0) {
+            audioDeviceName = SDL_GetAudioDeviceName(0, true);
+        }
 
-        if (!openInputDevice(SDL_GetAudioDeviceName(1, true))) {
+        if (!openInputDevice(audioDeviceName)) {
             SDL_Log("Error opening audio device: %s", SDL_GetError());
             return -1;
         }
-    } else if (argc == 2) {
+        break;
+    }
+    case Options::InputType::FILE: {
         options.input = Options::InputType::FILE;
 
-        std::string fileName(argv[1]);
-        if (!loadFile(fileName)) {
-            SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
+        if (!loadFile(options.fileName)) {
+            SDL_Log("Error loading \"%s\": %s", options.fileName.c_str(), SDL_GetError());
             return -1;
         }
 
@@ -360,6 +424,8 @@ int main(int argc, char **argv)
             SDL_Log("Error opening audio device: %s", SDL_GetError());
             return -1;
         }
+        break;
+    }
     }
 
     dmxinit();
