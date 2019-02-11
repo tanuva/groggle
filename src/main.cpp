@@ -387,6 +387,40 @@ bool parseArgs(const int argc, const char **argv, Options *options)
     return true;
 }
 
+int liveMain(std::thread lightThread, std::string audioDeviceName)
+{
+    if (audioDeviceName.size() == 0) {
+        audioDeviceName = SDL_GetAudioDeviceName(0, true);
+    }
+
+    if (!openInputDevice(audioDeviceName)) {
+        SDL_Log("Error opening audio device: %s", SDL_GetError());
+        return -1;
+    }
+
+    lightThread.join(); // Wait for Godot non-blockingly
+    closeInputDevice();
+    return 0;
+}
+
+int fileMain(std::thread lightThread, std::string fileName)
+{
+    if (!loadFile(fileName)) {
+        SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
+        return -1;
+    }
+
+    if (!openOutputDevice(SDL_GetAudioDeviceName(0, false))) {
+        SDL_Log("Error opening audio device: %s", SDL_GetError());
+        return -1;
+    }
+
+    SDL_Delay(meta.duration * 1000);
+    lightThread.join();
+    closeOutputDevice();
+    SDL_FreeWAV(meta.data);
+}
+
 void cleanup()
 {
     SDL_Quit();
@@ -416,40 +450,10 @@ int main(const int argc, const char **argv)
     std::thread lightThread(lightLoop, &meta);
 
     switch (options.input) {
-    case Options::InputType::DEVICE: {
-        std::string audioDeviceName = options.inputDevice;
-        if (audioDeviceName.size() == 0) {
-            audioDeviceName = SDL_GetAudioDeviceName(0, true);
-        }
-
-        if (!openInputDevice(audioDeviceName)) {
-            SDL_Log("Error opening audio device: %s", SDL_GetError());
-            return -1;
-        }
-
-        lightThread.join(); // Wait for Godot non-blockingly
-        closeInputDevice();
-        break;
-    }
-    case Options::InputType::FILE: {
-        options.input = Options::InputType::FILE;
-
-        if (!loadFile(options.fileName)) {
-            SDL_Log("Error loading \"%s\": %s", options.fileName.c_str(), SDL_GetError());
-            return -1;
-        }
-
-        if (!openOutputDevice(SDL_GetAudioDeviceName(0, false))) {
-            SDL_Log("Error opening audio device: %s", SDL_GetError());
-            return -1;
-        }
-
-        SDL_Delay(meta.duration * 1000);
-        lightThread.join();
-        closeOutputDevice();
-        SDL_FreeWAV(meta.data);
-        break;
-    }
+    case Options::InputType::DEVICE:
+        return liveMain(std::move(lightThread), options.inputDevice);
+    case Options::InputType::FILE:
+        return fileMain(std::move(lightThread), options.fileName);
     }
 
     return 0;
