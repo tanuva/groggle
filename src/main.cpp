@@ -117,7 +117,7 @@ void lightLoop(AudioMetadata *meta)
         const uint32_t dataPos = std::min(meta->position / 2, sampleCount - FRAME_SIZE * meta->fileSpec.channels);
         const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, in, out);
         meta->mutex.unlock();
-        light::sendSpectrum(spectrum);
+        light::update(spectrum);
     });
     timer.run();
 

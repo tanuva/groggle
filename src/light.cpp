@@ -89,7 +89,7 @@ void sendValue(const int channel, const float v)
     }
 }
 
-void sendSpectrum(const Spectrum spectrum)
+void update(const Spectrum spectrum)
 {
     /* Tripar:
      * 1-3: RGB
