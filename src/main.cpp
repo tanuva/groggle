@@ -315,14 +315,14 @@ void closeOutputDevice()
 
 void printAudioDevices()
 {
-    SDL_Log("Output Devices:");
-    for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
-        SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, false));
+    std::cout << "Input Devices:\n";
+    for (int i = 0; i < SDL_GetNumAudioDevices(true); i++) {
+        std::cout << "\t- " << SDL_GetAudioDeviceName(i, true) << std::endl;
     }
 
-    SDL_Log("Input Devices:");
-    for (int i = 0; i < SDL_GetNumAudioDevices(true); i++) {
-        SDL_Log("%i. %s", i, SDL_GetAudioDeviceName(i, true));
+    std::cout << "Output Devices:\n";
+    for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
+        std::cout << "\t- " << SDL_GetAudioDeviceName(i, false) << std::endl;
     }
 }
 
