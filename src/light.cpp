@@ -47,6 +47,12 @@ static void hslToRgb(const float hsl[3], float *rgb)
     rgb[2] = f(4);
 }
 
+static uint8_t f2dmx(const float f)
+{
+    const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
+    return static_cast<uint8_t>(clamped);
+}
+
 void blackout()
 {
     buffer.Blackout();
@@ -74,8 +80,7 @@ void sendValue(const int channel, const float v)
 {
     //ola::DmxBuffer buffer;
     //buffer.Blackout(); // Don't overwrite previous settings!
-    const float clamped = round(std::min(std::max(v * 255, 0.0f), 255.0f));
-    const uint8_t native = static_cast<uint8_t>(clamped);
+    const uint8_t native = f2dmx(v);
     //std::cerr << "c: " << clamped << " n: " << (int)native << std::endl;
     buffer.SetChannel(channel, native);
 
