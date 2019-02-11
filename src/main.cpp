@@ -392,6 +392,7 @@ int main(const int argc, const char **argv)
 
     if (SDL_Init(SDL_INIT_AUDIO) != 0) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
+        return -1;
     }
     atexit(&cleanup);
 
