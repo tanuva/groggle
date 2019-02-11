@@ -115,11 +115,13 @@ void update(const Spectrum spectrum)
     float rgb[3];
     hslToRgb(hsl, rgb);
 
-    // TODO Prepare one DMX buffer per frame, don't send every time
-    sendValue(ADJ + 5, val);
-    sendValue(ADJ + 0, rgb[0]);
-    sendValue(ADJ + 1, rgb[1]);
-    sendValue(ADJ + 2, rgb[2]);
+    buffer.SetChannel(ADJ + 5, f2dmx(val));
+    buffer.SetChannel(ADJ + 0, f2dmx(rgb[0]));
+    buffer.SetChannel(ADJ + 1, f2dmx(rgb[1]));
+    buffer.SetChannel(ADJ + 2, f2dmx(rgb[2]));
+    if (!olaClient->SendDmx(universe, buffer)) {
+        SDL_Log("SendDmx() failed");
+    }
 }
 
 }
