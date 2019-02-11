@@ -389,10 +389,6 @@ bool parseArgs(const int argc, const char **argv, Options *options)
 
 int liveMain(std::thread lightThread, std::string audioDeviceName)
 {
-    if (audioDeviceName.size() == 0) {
-        audioDeviceName = SDL_GetAudioDeviceName(0, true);
-    }
-
     if (!openInputDevice(audioDeviceName)) {
         SDL_Log("Error opening audio device: %s", SDL_GetError());
         return -1;
@@ -442,6 +438,11 @@ int main(const int argc, const char **argv)
     if (options.listDevices) {
         printAudioDevices();
         return 0;
+    }
+
+    // Use the first audio input device if none was given.
+    if (options.inputDevice.size() == 0 && SDL_GetNumAudioDevices(true) > 0) {
+        options.inputDevice = SDL_GetAudioDeviceName(0, true);
     }
 
     dmxinit();
