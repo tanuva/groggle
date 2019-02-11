@@ -21,7 +21,7 @@ ola::DmxBuffer buffer;
 
 const int ADJ = 69;
 
-void hslToRgb(const float hsl[3], float *rgb)
+static void hslToRgb(const float hsl[3], float *rgb)
 {
     // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSL_conversion
     const float a = hsl[1] * std::min(hsl[2], 1.0f - hsl[2]);

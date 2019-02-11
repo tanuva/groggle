@@ -10,8 +10,6 @@ void blackout();
 void dmxinit();
 void sendSpectrum(const groggel::Spectrum spectrum);
 
-void hslToRgb(const float hsl[3], float *rgb); // TODO Unexport
-
 }
 
 #endif
