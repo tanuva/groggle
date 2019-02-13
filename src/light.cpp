@@ -46,7 +46,7 @@ private:
 
 const unsigned int universe = 1; // universe to use for sending data
 ola::client::StreamingClient *olaClient = nullptr;
-ola::DmxBuffer buffer;
+ola::DmxBuffer dmx;
 
 const int ADJ = 69;
 
@@ -84,8 +84,8 @@ static uint8_t f2dmx(const float f)
 
 void blackout()
 {
-    buffer.Blackout();
-    olaClient->SendDmx(universe, buffer);
+    dmx.Blackout();
+    olaClient->SendDmx(universe, dmx);
 }
 
 void dmxinit()
@@ -131,11 +131,11 @@ void update(const Spectrum spectrum)
     float rgb[3];
     hslToRgb(hsl, rgb);
 
-    buffer.SetChannel(ADJ + 5, f2dmx(val));
-    buffer.SetChannel(ADJ + 0, f2dmx(rgb[0]));
-    buffer.SetChannel(ADJ + 1, f2dmx(rgb[1]));
-    buffer.SetChannel(ADJ + 2, f2dmx(rgb[2]));
-    if (!olaClient->SendDmx(universe, buffer)) {
+    dmx.SetChannel(ADJ + 5, f2dmx(intensity));
+    dmx.SetChannel(ADJ + 0, f2dmx(rgb[0]));
+    dmx.SetChannel(ADJ + 1, f2dmx(rgb[1]));
+    dmx.SetChannel(ADJ + 2, f2dmx(rgb[2]));
+    if (!olaClient->SendDmx(universe, dmx)) {
         SDL_Log("SendDmx() failed");
     }
 }
