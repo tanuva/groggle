@@ -76,19 +76,6 @@ void dmxinit()
     blackout();
 }
 
-void sendValue(const int channel, const float v)
-{
-    //ola::DmxBuffer buffer;
-    //buffer.Blackout(); // Don't overwrite previous settings!
-    const uint8_t native = f2dmx(v);
-    //std::cerr << "c: " << clamped << " n: " << (int)native << std::endl;
-    buffer.SetChannel(channel, native);
-
-    if (!olaClient->SendDmx(universe, buffer)) {
-        SDL_Log("SendDmx() failed");
-    }
-}
-
 void update(const Spectrum spectrum)
 {
     /* Tripar:
