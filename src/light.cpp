@@ -112,21 +112,21 @@ void update(const Spectrum spectrum)
      * 6: Dimmer
      */
 
-    /* Ideas:
-     * - Beat to white, decay to color (or vice versa)
-     */
-    static const int NUM_COLORS = 12;
-    static float hsl[3] {18.0f, 1.0f, 0.5f};
+    static const float ORANGE = 18.0f;
+    static float hsl[3] {ORANGE, 1.0f, 0.5f};
 
-    static float lastVal;
     float val = spectrum.get(Band::LOW);
-    if ( val > lastVal ) {
+
+    static float lastVal = 0;
+    if (val > lastVal) {
         lastVal = val;
-        //hsl[0] += 360 / NUM_COLORS;
     } else {
         lastVal *= 0.9f;
-        val = lastVal;
     }
+
+    static Buffer<float> outputBuf(5);
+    outputBuf.append(lastVal);
+    const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
 
     float rgb[3];
     hslToRgb(hsl, rgb);
