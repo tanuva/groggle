@@ -378,5 +378,6 @@ int main(const int argc, const char **argv)
         return fileMain(std::move(lightThread), meta, options.fileName);
     }
 
-    return 0;
+    assert(false && "This is not the case you are looking for!" );
+    return -1;
 }
