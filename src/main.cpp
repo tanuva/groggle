@@ -92,9 +92,8 @@ void lightLoop(AudioMetadataPtr meta)
     // frequency data that is printed below.
     bool ready = false;
     do {
-        meta->mutex.lock();
+        std::lock_guard<std::mutex>(meta->mutex);
         ready = meta->dataSize > 0;
-        meta->mutex.unlock();
     } while (!ready);
 
     // The amount of frames analyzed at a time. Also determines the frequency
@@ -131,28 +130,26 @@ void lightLoop(AudioMetadataPtr meta)
 void inputCallback(void *userData, uint8_t *stream, int bufferSize)
 {
     AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
-    meta->mutex.lock();
+    std::lock_guard<std::mutex>(meta->mutex);
     memcpy(meta->data, stream, bufferSize);
     meta->dataSize = bufferSize;
     meta->position = 0;
-    meta->mutex.unlock();
 }
 
 void outputCallback(void *userData, uint8_t *stream, int bufferSize)
 {
     AudioMetadata *meta = reinterpret_cast<AudioMetadata *>(userData);
-    meta->mutex.lock();
+    std::lock_guard<std::mutex>(meta->mutex);
     const uint32_t count = std::min(static_cast<uint32_t>(bufferSize),
                                     meta->dataSize - meta->position);
     memcpy(stream, &meta->data[meta->position], count);
     //SDL_Log("Audio pos: %f", meta->position / (float)meta->dataSize);
     meta->position += count;
-    meta->mutex.unlock();
 }
 
 bool loadFile(const std::string fileName, AudioMetadataPtr meta)
 {
-    meta->mutex.lock();
+    std::lock_guard<std::mutex>(meta->mutex);
     if (SDL_LoadWAV(fileName.c_str(), &meta->fileSpec, &meta->data, &meta->dataSize) == 0) {
         return false;
     }
@@ -180,12 +177,12 @@ bool loadFile(const std::string fileName, AudioMetadataPtr meta)
             meta->dataSize,
             SDL_AUDIO_MASK_BITSIZE & meta->fileSpec.format,
             SDL_AUDIO_ISLITTLEENDIAN(meta->fileSpec.format));
-    meta->mutex.unlock();
     return true;
 }
 
 bool openInputDevice(const std::string name, AudioMetadataPtr meta)
 {
+    std::lock_guard<std::mutex>(meta->mutex);
     SDL_AudioSpec have;
     SDL_AudioSpec want;
     SDL_zero(want);
@@ -196,7 +193,6 @@ bool openInputDevice(const std::string name, AudioMetadataPtr meta)
     want.callback = &inputCallback;
     want.userdata = meta.get();
 
-    meta->mutex.lock();
     meta->audioDeviceID = SDL_OpenAudioDevice(name.c_str(), true, &want, &have, 0);
     if (meta->audioDeviceID == 0) {
         return false;
@@ -205,7 +201,6 @@ bool openInputDevice(const std::string name, AudioMetadataPtr meta)
     meta->fileSpec = have;
     meta->duration = 0; // infinity
     meta->data = new uint8_t[have.samples * 2]; // samples != bytes
-    meta->mutex.unlock();
 
     SDL_PauseAudioDevice(meta->audioDeviceID, 0);
     return true;
@@ -213,16 +208,15 @@ bool openInputDevice(const std::string name, AudioMetadataPtr meta)
 
 void closeInputDevice(AudioMetadataPtr meta)
 {
-    meta->mutex.lock();
+    std::lock_guard<std::mutex>(meta->mutex);
     SDL_PauseAudioDevice(meta->audioDeviceID, 1);
     SDL_CloseAudioDevice(meta->audioDeviceID);
     delete[] meta->data;
-    meta->mutex.unlock();
 }
 
 bool openOutputDevice(const std::string name, AudioMetadataPtr meta)
 {
-    meta->mutex.lock();
+    std::lock_guard<std::mutex>(meta->mutex);
     SDL_AudioSpec have;
     SDL_AudioSpec want;
     SDL_zero(want); // O rly?
@@ -238,16 +232,14 @@ bool openOutputDevice(const std::string name, AudioMetadataPtr meta)
     }
 
     SDL_PauseAudioDevice(meta->audioDeviceID, 0);
-    meta->mutex.unlock();
     return true;
 }
 
 void closeOutputDevice(AudioMetadataPtr meta)
 {
-    meta->mutex.lock();
+    std::lock_guard<std::mutex>(meta->mutex);
     SDL_PauseAudioDevice(meta->audioDeviceID, 1);
     SDL_CloseAudioDevice(meta->audioDeviceID);
-    meta->mutex.unlock();
 }
 
 void printAudioDevices()
