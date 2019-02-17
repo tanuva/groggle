@@ -88,7 +88,7 @@ void blackout()
     olaClient->SendDmx(universe, dmx);
 }
 
-void dmxinit()
+void init()
 {
     // turn on OLA logging
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);

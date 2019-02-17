@@ -7,7 +7,7 @@ namespace light
 {
 
 void blackout();
-void dmxinit();
+void init();
 void update(const groggel::Spectrum spectrum);
 
 }

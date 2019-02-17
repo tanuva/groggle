@@ -366,9 +366,8 @@ int main(const int argc, const char **argv)
         options.inputDevice = SDL_GetAudioDeviceName(0, true);
     }
 
-    light::dmxinit();
-
     // Launch the lighting thread
+    light::init();
     std::thread lightThread(lightLoop, &meta);
 
     switch (options.input) {
