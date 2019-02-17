@@ -331,7 +331,6 @@ int fileMain(std::thread lightThread, AudioMetadataPtr meta, std::string fileNam
         return -1;
     }
 
-    SDL_Delay(meta.duration * 1000);
     lightThread.join();
     closeOutputDevice(meta);
     SDL_FreeWAV(meta->data);
