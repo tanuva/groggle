@@ -28,11 +28,9 @@ struct Options
         FILE,
         DEVICE
     };
-    InputType input;
+    InputType inputType;
 
-    std::string fileName;
-    std::string inputDevice;
-
+    std::string inputName;
     bool listDevices;
 };
 
@@ -283,9 +281,17 @@ bool parseArgs(const int argc, const char **argv, Options *options)
         cmd.add(fileNameArg);
 
         cmd.parse(argc, argv);
-        options->fileName = fileNameArg.getValue();
-        options->input = fileNameArg.isSet() ? Options::InputType::FILE : Options::InputType::DEVICE;
-        options->inputDevice = inputArg.getValue();
+        options->inputType = fileNameArg.isSet() ? Options::InputType::FILE : Options::InputType::DEVICE;
+        switch (options->inputType) {
+            case Options::InputType::FILE:
+                options->inputName = fileNameArg.getValue();
+                break;
+            case Options::InputType::DEVICE:
+                options->inputName = inputArg.getValue();
+                break;
+            default:
+                assert(false && "Unexpected input type");
+        }
         options->listDevices = devicesArg.getValue();
 
         if (fileNameArg.isSet() && inputArg.isSet()) {
@@ -353,8 +359,8 @@ int main(const int argc, const char **argv)
     }
 
     // Use the first audio input device if none was given.
-    if (options.inputDevice.size() == 0 && SDL_GetNumAudioDevices(true) > 0) {
-        options.inputDevice = SDL_GetAudioDeviceName(0, true);
+    if (options.inputName.size() == 0 && SDL_GetNumAudioDevices(true) > 0) {
+        options.inputName = SDL_GetAudioDeviceName(0, true);
     }
 
     AudioMetadataPtr meta = std::make_shared<AudioMetadata>();
@@ -363,13 +369,13 @@ int main(const int argc, const char **argv)
     light::init();
     std::thread lightThread(lightLoop, meta);
 
-    switch (options.input) {
+    switch (options.inputType) {
     case Options::InputType::DEVICE:
-        return liveMain(std::move(lightThread), meta, options.inputDevice);
+        return liveMain(std::move(lightThread), meta, options.inputName);
     case Options::InputType::FILE:
-        return fileMain(std::move(lightThread), meta, options.fileName);
+        return fileMain(std::move(lightThread), meta, options.inputName);
     }
 
-    assert(false && "This is not the case you are looking for!" );
+    assert(false && "This is not the case you are looking for!");
     return -1;
 }
