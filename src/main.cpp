@@ -1,3 +1,4 @@
+#include "audiometadata.h"
 #include "light.h"
 #include "spectrum.h"
 #include "timer.h"
@@ -33,18 +34,6 @@ struct Options
     std::string inputName;
     bool listDevices;
 };
-
-struct AudioMetadata
-{
-    std::mutex mutex; // Used to lock the whole struct.
-    SDL_AudioDeviceID audioDeviceID;
-    SDL_AudioSpec fileSpec;
-    uint8_t *data = nullptr;
-    uint32_t dataSize;
-    float duration;
-    uint32_t position;
-};
-typedef std::shared_ptr<AudioMetadata> AudioMetadataPtr;
 
 static inline float magnitude(const float f[])
 {
