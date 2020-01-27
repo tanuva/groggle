@@ -273,11 +273,12 @@ bool parseArgs(const int argc, const char **argv, Options *options)
                              false);
         cmd.add(devicesArg);
 
-        UnlabeledValueArg<std::string> fileNameArg("file",
-                                                   "Path to the audio file to play.",
-                                                   false,
-                                                   "",
-                                                   "string");
+        ValueArg<std::string> fileNameArg("f",
+                                          "file",
+                                          "Path to the audio file to play.",
+                                          false,
+                                          "",
+                                          "string");
         cmd.add(fileNameArg);
 
         cmd.parse(argc, argv);
