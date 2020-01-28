@@ -3,7 +3,9 @@
 
 #include <vector>
 
-namespace groggel
+namespace groggle
+{
+namespace audio
 {
 
 namespace Band
@@ -29,6 +31,7 @@ private:
     float m_bands[Band::BAND_COUNT];
 };
 
+}
 }
 
 #endif

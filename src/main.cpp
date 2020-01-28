@@ -12,6 +12,7 @@
 #include <tclap/CmdLine.h>
 
 #include <algorithm> // min, max
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <thread>
@@ -20,7 +21,7 @@
 #include <limits>
 #include <mutex>
 
-using namespace groggel;
+using namespace groggle;
 using namespace TCLAP;
 
 struct Options
@@ -46,7 +47,7 @@ static inline float magnitude(const float f[])
  * @param in Preallocated FFTW input array
  * @param out Preallocated FFTW output array
  */
-static Spectrum transform(const int16_t data[], const size_t sampleCount, const int channels, float *in, fftwf_complex *out)
+static audio::Spectrum transform(const int16_t data[], const size_t sampleCount, const int channels, float *in, fftwf_complex *out)
 {
     fftwf_plan p;
     p = fftwf_plan_dft_r2c_1d(sampleCount, in, out, FFTW_ESTIMATE);
@@ -62,10 +63,10 @@ static Spectrum transform(const int16_t data[], const size_t sampleCount, const 
     // Scaling: http://fftw.org/fftw3_doc/The-1d-Discrete-Fourier-Transform-_0028DFT_0029.html#The-1d-Discrete-Fourier-Transform-_0028DFT_0029
     const float scaleFactor = 2.0f / sampleCount;
 
-    Spectrum spectrum;
-    spectrum.add(Band::LOW, magnitude(out[1]) * scaleFactor);
-    spectrum.add(Band::MID, magnitude(out[10]) * scaleFactor);
-    spectrum.add(Band::HIGH, magnitude(out[20]) * scaleFactor);
+    audio::Spectrum spectrum;
+    spectrum.add(audio::Band::LOW, magnitude(out[1]) * scaleFactor);
+    spectrum.add(audio::Band::MID, magnitude(out[10]) * scaleFactor);
+    spectrum.add(audio::Band::HIGH, magnitude(out[20]) * scaleFactor);
 
     // TODO Print something like a graphic equalizer? Render with SDL?
 
@@ -101,7 +102,7 @@ void lightLoop(AudioMetadataPtr meta)
         const int16_t *data = reinterpret_cast<int16_t*>(meta->data);
         const uint32_t sampleCount = meta->dataSize / 2; // Casting int8 -> int16 halves dataSize as well!
         const uint32_t dataPos = std::min(meta->position / 2, sampleCount - FRAME_SIZE * meta->fileSpec.channels);
-        const Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, meta->fileSpec.channels, in, out);
+        const audio::Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, meta->fileSpec.channels, in, out);
         meta->mutex.unlock();
         light::update(spectrum);
     });

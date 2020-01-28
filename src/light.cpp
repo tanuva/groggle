@@ -11,8 +11,8 @@
 #include <cmath>
 #include <deque>
 
-using namespace groggel;
-
+namespace groggle
+{
 namespace light
 {
 
@@ -105,7 +105,7 @@ void init()
     blackout();
 }
 
-void update(const Spectrum spectrum)
+void update(const audio::Spectrum spectrum)
 {
     /* Tripar:
      * 1-3: RGB
@@ -115,7 +115,7 @@ void update(const Spectrum spectrum)
     static const float ORANGE = 18.0f;
     static float hsl[3] {ORANGE, 1.0f, 0.5f};
 
-    float val = spectrum.get(Band::LOW);
+    float val = spectrum.get(audio::Band::LOW);
 
     static float lastVal = 0;
     if (val > lastVal) {
@@ -140,4 +140,5 @@ void update(const Spectrum spectrum)
     }
 }
 
+}
 }

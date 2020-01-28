@@ -3,7 +3,7 @@
 
 #include <functional>
 
-namespace groggel
+namespace groggle
 {
 
 class Timer

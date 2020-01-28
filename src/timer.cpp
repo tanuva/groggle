@@ -1,5 +1,6 @@
 #include "timer.h"
 
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -7,7 +8,8 @@
 
 using std::chrono::steady_clock;
 
-using namespace groggel;
+namespace groggle
+{
 
 Timer::Timer(const float duration, const float frequency)
     : m_duration(duration * S_TO_NS)
@@ -44,4 +46,6 @@ void Timer::run()
 
         usleep( 1 /*ms*/ * 1000 );
     } while ( m_duration > 0 ? elapsed < m_duration : m_running );
+}
+
 }

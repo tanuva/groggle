@@ -1,14 +1,20 @@
 #include "spectrum.h"
 
-using namespace groggel;
+namespace groggle
+{
+namespace audio
+{
 
-Spectrum::Spectrum()
+audio::Spectrum::Spectrum()
 {
 }
 
-void Spectrum::add(Band::Enum band, const float value)
+void audio::Spectrum::add(Band::Enum band, const float value)
 {
     // TODO Build incremental average?
     // Use FPS counter smoothing for that
     m_bands[band] = value;
+}
+
+}
 }

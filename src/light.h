@@ -3,13 +3,16 @@
 
 #include "spectrum.h"
 
+namespace groggle
+{
 namespace light
 {
 
 void blackout();
 void init();
-void update(const groggel::Spectrum spectrum);
+void update(const audio::Spectrum spectrum);
 
+}
 }
 
 #endif
