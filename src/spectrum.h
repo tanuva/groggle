@@ -8,27 +8,24 @@ namespace groggle
 namespace audio
 {
 
-namespace Band
-{
-    enum Enum {
-        LOW = 0,
-        MID,
-        HIGH,
-        BAND_COUNT
-    };
-}
+enum class Band {
+    LOW = 0,
+    MID,
+    HIGH,
+    BAND_COUNT
+};
 
 class Spectrum
 {
 public:
     Spectrum();
-    void add(Band::Enum band, const float value);
-    float get(Band::Enum band) const {
-        return m_bands[band];
+    void add(Band band, const float value);
+    float get(Band band) const {
+        return m_bands[static_cast<int>(band)];
     };
 
 private:
-    float m_bands[Band::BAND_COUNT];
+    float m_bands[static_cast<int>(Band::BAND_COUNT)];
 };
 
 }

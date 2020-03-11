@@ -9,11 +9,11 @@ audio::Spectrum::Spectrum()
 {
 }
 
-void audio::Spectrum::add(Band::Enum band, const float value)
+void audio::Spectrum::add(Band band, const float value)
 {
     // TODO Build incremental average?
     // Use FPS counter smoothing for that
-    m_bands[band] = value;
+    m_bands[static_cast<int>(band)] = value;
 }
 
 }
