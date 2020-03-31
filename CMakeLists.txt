@@ -7,6 +7,7 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS true)
 add_executable (groggle
     src/light.cpp
     src/main.cpp
+    src/painput.cpp
     src/spectrum.cpp
     src/timer.cpp
 )
@@ -27,6 +28,20 @@ find_package(PkgConfig REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 target_include_directories(groggle PUBLIC ${SDL2_INCLUDE_DIRS})
 target_link_libraries(groggle ${SDL2_LIBRARIES})
+
+# PulseAudio
+find_path(PULSEAUDIO_INCLUDE_DIR
+    NAMES pulse/pulseaudio.h
+    DOC "The PulseAudio include directory"
+)
+
+find_library(PULSEAUDIO_LIBRARY
+    NAMES pulse
+    DOC "The PulseAudio library"
+)
+
+target_include_directories(groggle PUBLIC ${PULSEAUDIO_INCLUDE_DIR})
+target_link_libraries(groggle ${PULSEAUDIO_LIBRARY})
 
 # OLA
 # TODO Configurable installation path

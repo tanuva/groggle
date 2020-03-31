@@ -1,5 +1,6 @@
 #include "audiometadata.h"
 #include "light.h"
+#include "painput.h"
 #include "spectrum.h"
 #include "timer.h"
 
@@ -191,7 +192,7 @@ bool openInputDevice(AudioMetadataPtr meta)
 
     meta->fileSpec = have;
     meta->duration = 0; // infinity
-    meta->data = new uint8_t[have.samples * 2]; // samples != bytes
+    meta->data = new uint8_t[have.size]; // samples != bytes
 
     SDL_PauseAudioDevice(meta->audioDeviceID, 0);
     return true;
@@ -238,15 +239,24 @@ void closeOutputDevice(AudioMetadataPtr meta)
 
 void printAudioDevices()
 {
-    std::cout << "Input Devices:\n";
+    std::cout << "SDL inputs:\n";
     for (int i = 0; i < SDL_GetNumAudioDevices(true); i++) {
         std::cout << "\t- " << SDL_GetAudioDeviceName(i, true) << std::endl;
     }
 
-    std::cout << "Output Devices:\n";
+    std::cout << "SDL outputs (for file playback):\n";
     for (int i = 0; i < SDL_GetNumAudioDevices(false); i++) {
         std::cout << "\t- " << SDL_GetAudioDeviceName(i, false) << std::endl;
     }
+
+    std::cout << "PulseAudio output monitors:\n";
+    audio::pulse::getSinks([=](const std::list<std::string> sinks) {
+        for (auto it = sinks.begin(); it != sinks.end(); it++) {
+            std::cout << "\t- " << *it << ".monitor" << std::endl;
+        }
+
+        audio::pulse::quit(0);
+    });
 }
 
 bool parseArgs(const int argc, const char **argv, Options *options)
@@ -304,19 +314,23 @@ bool parseArgs(const int argc, const char **argv, Options *options)
 int liveMain(std::thread lightThread, AudioMetadataPtr meta)
 {
     if (!openInputDevice(meta)) {
-        SDL_Log("Error opening audio device: %s", SDL_GetError());
+        SDL_Log("Not an SDL audio device, trying PulseAudio (%s)", SDL_GetError());
+    }
+
+    if (!audio::pulse::run(meta)) { // Returns an error or blocks via the PA main loop
+        SDL_Log("Not a PulseAudio device, giving up.");
         return -1;
     }
 
-    lightThread.join(); // Block here until we're done
-    closeInputDevice(meta);
+    lightThread.join();
+    //closeInputDevice(meta); // Technically we need to close *only* if using SDL. Will never happen though.
     return 0;
 }
 
 int fileMain(std::thread lightThread, AudioMetadataPtr meta)
 {
     if (!loadFile(meta)) {
-        SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
+        SDL_Log("Error loading \"%s\": %s", meta->inputName.c_str(), SDL_GetError());
         return -1;
     }
 
@@ -360,6 +374,7 @@ int main(const int argc, const char **argv)
     }
 
     AudioMetadataPtr meta = std::make_shared<AudioMetadata>();
+    meta->inputName = options.inputName;
 
     // Launch the lighting thread
     light::init();
