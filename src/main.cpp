@@ -368,12 +368,8 @@ int main(const int argc, const char **argv)
         return 0;
     }
 
-    // Use the first audio input device if none was given.
-    if (options.inputName.size() == 0 && SDL_GetNumAudioDevices(true) > 0) {
-        options.inputName = SDL_GetAudioDeviceName(0, true);
-    }
-
     AudioMetadataPtr meta = std::make_shared<AudioMetadata>();
+    // TODO Use PA's default sink monitor as input device
     meta->inputName = options.inputName;
 
     // Launch the lighting thread
