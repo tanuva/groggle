@@ -9,6 +9,7 @@
 struct AudioMetadata
 {
     std::mutex mutex; // Used to lock the whole struct.
+    std::string inputName; // Can be a file URI or an audio device that supplies data to us.
     SDL_AudioDeviceID audioDeviceID;
     SDL_AudioSpec fileSpec;
     uint8_t *data = nullptr;

@@ -135,10 +135,10 @@ void outputCallback(void *userData, uint8_t *stream, int bufferSize)
     meta->position += count;
 }
 
-bool loadFile(const std::string fileName, AudioMetadataPtr meta)
+bool loadFile(AudioMetadataPtr meta)
 {
     std::lock_guard<std::mutex>(meta->mutex);
-    if (SDL_LoadWAV(fileName.c_str(), &meta->fileSpec, &meta->data, &meta->dataSize) == 0) {
+    if (SDL_LoadWAV(meta->inputName.c_str(), &meta->fileSpec, &meta->data, &meta->dataSize) == 0) {
         return false;
     }
 
@@ -168,7 +168,7 @@ bool loadFile(const std::string fileName, AudioMetadataPtr meta)
     return true;
 }
 
-bool openInputDevice(const std::string name, AudioMetadataPtr meta)
+bool openInputDevice(AudioMetadataPtr meta)
 {
     std::lock_guard<std::mutex>(meta->mutex);
     SDL_AudioSpec have;
@@ -181,7 +181,7 @@ bool openInputDevice(const std::string name, AudioMetadataPtr meta)
     want.callback = &inputCallback;
     want.userdata = meta.get();
 
-    meta->audioDeviceID = SDL_OpenAudioDevice(name.c_str(), true, &want, &have, 0);
+    meta->audioDeviceID = SDL_OpenAudioDevice(meta->inputName.c_str(), true, &want, &have, 0);
     if (meta->audioDeviceID == 0) {
         return false;
     }
@@ -205,7 +205,7 @@ void closeInputDevice(AudioMetadataPtr meta)
     delete[] meta->data;
 }
 
-bool openOutputDevice(const std::string name, AudioMetadataPtr meta)
+bool openOutputDevice(AudioMetadataPtr meta)
 {
     std::lock_guard<std::mutex>(meta->mutex);
     SDL_AudioSpec have;
@@ -217,7 +217,7 @@ bool openOutputDevice(const std::string name, AudioMetadataPtr meta)
     want.callback = &outputCallback;
     want.userdata = meta.get();
 
-    meta->audioDeviceID = SDL_OpenAudioDevice(name.c_str(), false, &want, &have, 0);
+    meta->audioDeviceID = SDL_OpenAudioDevice(meta->inputName.c_str(), false, &want, &have, 0);
     if (meta->audioDeviceID == 0) {
         return false;
     }
@@ -301,9 +301,9 @@ bool parseArgs(const int argc, const char **argv, Options *options)
     return true;
 }
 
-int liveMain(std::thread lightThread, AudioMetadataPtr meta, std::string audioDeviceName)
+int liveMain(std::thread lightThread, AudioMetadataPtr meta)
 {
-    if (!openInputDevice(audioDeviceName, meta)) {
+    if (!openInputDevice(meta)) {
         SDL_Log("Error opening audio device: %s", SDL_GetError());
         return -1;
     }
@@ -313,14 +313,14 @@ int liveMain(std::thread lightThread, AudioMetadataPtr meta, std::string audioDe
     return 0;
 }
 
-int fileMain(std::thread lightThread, AudioMetadataPtr meta, std::string fileName)
+int fileMain(std::thread lightThread, AudioMetadataPtr meta)
 {
-    if (!loadFile(fileName, meta)) {
+    if (!loadFile(meta)) {
         SDL_Log("Error loading \"%s\": %s", fileName.c_str(), SDL_GetError());
         return -1;
     }
 
-    if (!openOutputDevice(SDL_GetAudioDeviceName(0, false), meta)) {
+    if (!openOutputDevice(meta)) {
         SDL_Log("Error opening audio device: %s", SDL_GetError());
         return -1;
     }
@@ -367,9 +367,9 @@ int main(const int argc, const char **argv)
 
     switch (options.inputType) {
     case Options::InputType::DEVICE:
-        return liveMain(std::move(lightThread), meta, options.inputName);
+        return liveMain(std::move(lightThread), meta);
     case Options::InputType::FILE:
-        return fileMain(std::move(lightThread), meta, options.inputName);
+        return fileMain(std::move(lightThread), meta);
     }
 
     assert(false && "This is not the case you are looking for!");
