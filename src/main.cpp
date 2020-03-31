@@ -176,7 +176,7 @@ bool openInputDevice(const std::string name, AudioMetadataPtr meta)
     SDL_zero(want);
     want.freq = 44100;
     want.format = AUDIO_S16LSB;
-    want.samples = 1024; // FRAME_SIZE?
+    want.samples = 1024; // Buffer size in samples
     want.channels = 1;
     want.callback = &inputCallback;
     want.userdata = meta.get();
@@ -185,6 +185,9 @@ bool openInputDevice(const std::string name, AudioMetadataPtr meta)
     if (meta->audioDeviceID == 0) {
         return false;
     }
+
+    SDL_Log("Want Freq: %i Format: 0x%0i Samples: %i Channels: %i", want.freq, want.format, want.samples, want.channels);
+    SDL_Log("Have Freq: %i Format: 0x%0i Samples: %i Channels: %i", have.freq, have.format, have.samples, have.channels);
 
     meta->fileSpec = have;
     meta->duration = 0; // infinity
@@ -219,6 +222,9 @@ bool openOutputDevice(const std::string name, AudioMetadataPtr meta)
         return false;
     }
 
+    SDL_Log("Want Freq: %i Format: 0x%0i Samples: %i Channels: %i", want.freq, want.format, want.samples, want.channels);
+    SDL_Log("Have Freq: %i Format: 0x%0i Samples: %i Channels: %i", have.freq, have.format, have.samples, have.channels);
+
     SDL_PauseAudioDevice(meta->audioDeviceID, 0);
     return true;
 }
@@ -246,7 +252,6 @@ void printAudioDevices()
 bool parseArgs(const int argc, const char **argv, Options *options)
 {
     try {
-        // Define the command line object.
         CmdLine cmd("", ' ', "0.1");
 
         ValueArg<std::string> inputArg("i",
@@ -303,7 +308,7 @@ int liveMain(std::thread lightThread, AudioMetadataPtr meta, std::string audioDe
         return -1;
     }
 
-    lightThread.join(); // Wait for Godot non-blockingly
+    lightThread.join(); // Block here until we're done
     closeInputDevice(meta);
     return 0;
 }
