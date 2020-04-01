@@ -8,6 +8,7 @@ add_executable (groggle
     src/light.cpp
     src/main.cpp
     src/painput.cpp
+    src/sdlinput.cpp
     src/spectrum.cpp
     src/timer.cpp
 )
