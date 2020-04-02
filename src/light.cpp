@@ -113,7 +113,7 @@ void update(const audio::Spectrum spectrum)
      */
 
     static const float ORANGE = 18.0f;
-    static float hsl[3] {ORANGE, 1.0f, 0.5f};
+    static const float hsl[3] {ORANGE, 1.0f, 0.5f};
 
     float val = spectrum.get(audio::Band::LOW);
 
