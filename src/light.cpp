@@ -124,7 +124,7 @@ void update(const audio::Spectrum spectrum)
         lastVal *= 0.9f;
     }
 
-    static Buffer<float> outputBuf(5);
+    static Buffer<float> outputBuf(3);
     outputBuf.append(lastVal);
     const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
 
