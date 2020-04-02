@@ -5,8 +5,8 @@ set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 add_executable (groggle
-    src/light.cpp
     src/main.cpp
+    src/olaoutput.cpp
     src/painput.cpp
     src/sdlinput.cpp
     src/spectrum.cpp

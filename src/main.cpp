@@ -1,5 +1,5 @@
 #include "audiometadata.h"
-#include "light.h"
+#include "olaoutput.h"
 #include "painput.h"
 #include "sdlinput.h"
 #include "spectrum.h"
@@ -106,14 +106,14 @@ void lightLoop(AudioMetadataPtr meta)
         const uint32_t dataPos = std::min(meta->position / 2, sampleCount - FRAME_SIZE * meta->fileSpec.channels);
         const audio::Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, meta->fileSpec.channels, in, out);
         meta->mutex.unlock();
-        light::update(spectrum);
+        olaoutput::update(spectrum);
     });
     timer.run();
 
     fftwf_free(out);
     fftwf_free(in);
 
-    light::blackout();
+    olaoutput::blackout();
     SDL_Log("Light thread done.");
 }
 
@@ -252,7 +252,7 @@ int main(const int argc, const char **argv)
     meta->inputName = options.inputName;
 
     // Launch the lighting thread
-    light::init();
+    olaoutput::init();
     std::thread lightThread(lightLoop, meta);
 
     switch (options.inputType) {

@@ -1,4 +1,4 @@
-#include "light.h"
+#include "olaoutput.h"
 #include "spectrum.h"
 
 #include <ola/DmxBuffer.h>
@@ -13,7 +13,7 @@
 
 namespace groggle
 {
-namespace light
+namespace olaoutput
 {
 
 template <typename T>

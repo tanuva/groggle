@@ -1,11 +1,11 @@
-#ifndef LIGHT_H
-#define LIGHT_H
+#ifndef OLAOUTPUT_H
+#define OLAOUTPUT_H
 
 #include "spectrum.h"
 
 namespace groggle
 {
-namespace light
+namespace olaoutput
 {
 
 void blackout();
