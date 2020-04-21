@@ -11,6 +11,7 @@ add_executable (groggle
     src/sdlinput.cpp
     src/spectrum.cpp
     src/timer.cpp
+    src/mqttcontrol.cpp
 )
 
 target_include_directories (groggle PUBLIC 3rdparty/tclap-1.2.2/include)
@@ -59,3 +60,16 @@ pkg_check_modules(FFTW REQUIRED fftw3f)
 target_link_libraries(groggle ${FFTW_LIBRARIES})
 target_include_directories(groggle PUBLIC ${FFTW_INCLUDE_DIRS})
 target_compile_options(groggle PUBLIC ${FFTW_CFLAGS_OTHER})
+
+# libmosquitto
+find_path(MOSQUITTO_INCLUDE_DIR
+    NAMES mosquitto.h
+    DOC "The MQTT client library's include directory"
+)
+find_library(MOSQUITTO_LIBRARY
+    NAMES mosquitto
+    DOC "The MQTT client library"
+)
+
+target_include_directories(groggle PUBLIC ${MOSQUITTO_INCLUDE_DIR})
+target_link_libraries(groggle ${MOSQUITTO_LIBRARY})

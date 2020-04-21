@@ -4,6 +4,7 @@
 #include "sdlinput.h"
 #include "spectrum.h"
 #include "timer.h"
+#include "mqttcontrol.h"
 
 #include <fftw3.h>
 
@@ -100,6 +101,10 @@ void lightLoop(AudioMetadataPtr meta)
     // "Playback" timing
     Timer timer(meta->duration /*s*/, 30 /*Hz*/);
     timer.setCallback([meta, in, out](const long long elapsed) {
+        if(!olaoutput::isEnabled()) {
+            return;
+        }
+
         meta->mutex.lock();
         const int16_t *data = reinterpret_cast<int16_t*>(meta->data);
         const uint32_t sampleCount = meta->dataSize / 2; // Casting int8 -> int16 halves dataSize as well!
@@ -115,6 +120,22 @@ void lightLoop(AudioMetadataPtr meta)
 
     olaoutput::blackout();
     SDL_Log("Light thread done.");
+}
+
+void mqttLoop()
+{
+    MQTT mqtt;
+    mqtt.init();
+    mqtt.enabledCallback = [&mqtt](const bool enabled) {
+        SDL_Log(">> Enabled: %i", enabled);
+        olaoutput::setEnabled(enabled);
+        mqtt.publishEnabled(olaoutput::isEnabled());
+    };
+
+    // Publish initial properties
+    mqtt.publishEnabled(olaoutput::isEnabled());
+
+    mqtt.run();
 }
 
 void printAudioDevices()
@@ -246,6 +267,8 @@ int main(const int argc, const char **argv)
         printAudioDevices();
         return 0;
     }
+
+    std::thread mqttThread(mqttLoop);
 
     AudioMetadataPtr meta = std::make_shared<AudioMetadata>();
     // TODO Use PA's default sink monitor as input device
