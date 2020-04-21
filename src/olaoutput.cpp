@@ -50,6 +50,8 @@ ola::DmxBuffer dmx;
 
 const int ADJ = 69;
 
+static std::atomic<bool> m_enabled = true; // This file should really become a class...
+
 static void hslToRgb(const float hsl[3], float *rgb)
 {
     // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSL_conversion
@@ -80,6 +82,20 @@ static uint8_t f2dmx(const float f)
 {
     const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
     return static_cast<uint8_t>(clamped);
+}
+
+bool isEnabled()
+{
+    return m_enabled;
+}
+
+void setEnabled(const bool enabled)
+{
+    if (m_enabled && !enabled) {
+        blackout();
+    }
+
+    m_enabled = enabled;
 }
 
 void blackout()
