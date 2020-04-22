@@ -126,11 +126,11 @@ void mqttLoop()
 {
     MQTT mqtt;
     mqtt.init();
-    mqtt.enabledCallback = [&mqtt](const bool enabled) {
+    mqtt.setEnabledCallback([&mqtt](const bool enabled) {
         SDL_Log(">> Enabled: %i", enabled);
         olaoutput::setEnabled(enabled);
         mqtt.publishEnabled(olaoutput::isEnabled());
-    };
+    });
 
     // Publish initial properties
     mqtt.publishEnabled(olaoutput::isEnabled());

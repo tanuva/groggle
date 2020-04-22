@@ -56,7 +56,7 @@ void groggle::on_message(struct mosquitto *client,
     if(property == "enabled") {
         bool enabled = false;
         ss >> enabled;
-        mqtt->enabledCallback(enabled);
+        mqtt->m_enabledCallback(enabled);
     } else {
         SDL_Log("Unexpected property: %s", property.c_str());
     }

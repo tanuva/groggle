@@ -24,8 +24,7 @@ public:
     bool init();
     void run();
     void publishEnabled(const bool enabled);
-
-    EnabledCb enabledCallback;
+    void setEnabledCallback(EnabledCb cb) { m_enabledCallback = cb; }
 
 private:
     struct Message {
@@ -39,6 +38,8 @@ private:
 
     MQTT(const MQTT&) {}
     void publishMessage(const std::shared_ptr<Message> msg);
+
+    EnabledCb m_enabledCallback;
 
     const std::string TOPIC = "groggle/";
     const std::string TOPIC_SET = TOPIC + "set/";
