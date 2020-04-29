@@ -54,7 +54,7 @@ static std::atomic<bool> m_enabled = true; // This file should really become a c
 
 static void hslToRgb(const float hsl[3], float *rgb)
 {
-    // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSL_conversion
+    // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
     const float a = hsl[1] * std::min(hsl[2], 1.0f - hsl[2]);
     static const auto k = [hsl](const int n) {
         // (n + H / 30) mod 12
@@ -64,7 +64,7 @@ static void hslToRgb(const float hsl[3], float *rgb)
         return (static_cast<int>(floor(tmp)) % 12) + frac;
     };
     static const auto f = [hsl, a](const int n) {
-        // f(n) = L - a * max(k - 3, 9 - k, 1), -1)
+        // f(n) = L - a * max(-1, min(k - 3, 9 - k, 1))
         return hsl[2] - a * std::max(
                                 -1.0f,
                                 std::min(
