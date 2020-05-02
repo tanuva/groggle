@@ -1,10 +1,10 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)
 
-project (groggle)
-set (CMAKE_CXX_STANDARD 17)
-set (CMAKE_EXPORT_COMPILE_COMMANDS true)
+project(groggle)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
-add_executable (groggle
+add_executable(groggle
     src/color.cpp
     src/main.cpp
     src/olaoutput.cpp
@@ -15,7 +15,7 @@ add_executable (groggle
     src/mqttcontrol.cpp
 )
 
-target_include_directories (groggle PUBLIC 3rdparty/tclap-1.2.2/include)
+target_include_directories(groggle PUBLIC 3rdparty/tclap-1.2.2/include)
 #target_compile_options(groggle PUBLIC "-pthread")
 set_property(TARGET groggle
     APPEND PROPERTY
