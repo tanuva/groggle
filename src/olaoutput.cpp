@@ -50,22 +50,25 @@ ola::DmxBuffer dmx;
 
 const int ADJ = 69;
 
+static const float ORANGE = 18.0f; // TODO Move into Color
+static const Color curColor(ORANGE, 1.0f, 0.5f);
+
 static std::atomic<bool> m_enabled = true; // This file should really become a class...
 
-static void hslToRgb(const float hsl[3], float *rgb)
+static void hslToRgb(const Color &color, float *rgb)
 {
     // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
-    const float a = hsl[1] * std::min(hsl[2], 1.0f - hsl[2]);
-    static const auto k = [hsl](const int n) {
+    const float a = color.s() * std::min(color.l(), 1.0f - color.l());
+    static const auto k = [color](const int n) {
         // (n + H / 30) mod 12
         // The modulus shall preserve the fractional component.
-        const float tmp = n + hsl[0] / 30.0f;
+        const float tmp = n + color.h() / 30.0f;
         const float frac = tmp - std::floor(tmp);
         return (static_cast<int>(floor(tmp)) % 12) + frac;
     };
-    static const auto f = [hsl, a](const int n) {
+    static const auto f = [color, a](const int n) {
         // f(n) = L - a * max(-1, min(k - 3, 9 - k, 1))
-        return hsl[2] - a * std::max(
+        return color.l() - a * std::max(
                                 -1.0f,
                                 std::min(
                                     1.0f,
@@ -128,9 +131,6 @@ void update(const audio::Spectrum spectrum)
      * 6: Dimmer
      */
 
-    static const float ORANGE = 18.0f;
-    static const float hsl[3] {ORANGE, 1.0f, 0.5f};
-
     float val = spectrum.get(audio::Band::LOW);
 
     static float lastVal = 0;
@@ -145,7 +145,7 @@ void update(const audio::Spectrum spectrum)
     const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
 
     float rgb[3];
-    hslToRgb(hsl, rgb);
+    hslToRgb(curColor, rgb);
 
     dmx.SetChannel(ADJ + 5, f2dmx(intensity));
     dmx.SetChannel(ADJ + 0, f2dmx(rgb[0]));

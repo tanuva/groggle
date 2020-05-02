@@ -1,6 +1,7 @@
 #ifndef OLAOUTPUT_H
 #define OLAOUTPUT_H
 
+#include "color.h"
 #include "spectrum.h"
 
 #include <atomic>
