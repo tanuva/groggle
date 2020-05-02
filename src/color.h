@@ -12,6 +12,8 @@ public:
     float s() const { return m_s; }
     float l() const { return m_l; }
 
+    void toRgb(float *r, float *g, float *b) const;
+
 private:
     float m_h = 0;
     float m_s = 0;

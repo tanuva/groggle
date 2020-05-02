@@ -55,32 +55,6 @@ static const Color curColor(ORANGE, 1.0f, 0.5f);
 
 static std::atomic<bool> m_enabled = true; // This file should really become a class...
 
-static void hslToRgb(const Color &color, float *rgb)
-{
-    // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
-    const float a = color.s() * std::min(color.l(), 1.0f - color.l());
-    static const auto k = [color](const int n) {
-        // (n + H / 30) mod 12
-        // The modulus shall preserve the fractional component.
-        const float tmp = n + color.h() / 30.0f;
-        const float frac = tmp - std::floor(tmp);
-        return (static_cast<int>(floor(tmp)) % 12) + frac;
-    };
-    static const auto f = [color, a](const int n) {
-        // f(n) = L - a * max(-1, min(k - 3, 9 - k, 1))
-        return color.l() - a * std::max(
-                                -1.0f,
-                                std::min(
-                                    1.0f,
-                                    std::min(k(n) - 3.0f,
-                                             9.0f - k(n))));
-    };
-
-    rgb[0] = f(0);
-    rgb[1] = f(8);
-    rgb[2] = f(4);
-}
-
 static uint8_t f2dmx(const float f)
 {
     const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
@@ -145,7 +119,7 @@ void update(const audio::Spectrum spectrum)
     const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
 
     float rgb[3];
-    hslToRgb(curColor, rgb);
+    curColor.toRgb(&rgb[0], &rgb[1], &rgb[2]);
 
     dmx.SetChannel(ADJ + 5, f2dmx(intensity));
     dmx.SetChannel(ADJ + 0, f2dmx(rgb[0]));
