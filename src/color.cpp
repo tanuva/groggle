@@ -13,9 +13,11 @@ Color::Color(const float h, const float s, const float l)
     m_h = h;
     m_s = s;
     m_l = l;
+
+    toRgb();
 }
 
-void Color::toRgb(float *r, float *g, float *b) const
+void Color::toRgb()
 {
     // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
     const float a = m_s * std::min(m_l, 1.0f - m_l);
@@ -36,7 +38,7 @@ void Color::toRgb(float *r, float *g, float *b) const
                                              9.0f - k(n))));
     };
 
-    *r = f(0);
-    *g = f(8);
-    *b = f(4);
+    m_r = f(0);
+    m_g = f(8);
+    m_b = f(4);
 }

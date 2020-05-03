@@ -118,13 +118,10 @@ void update(const audio::Spectrum spectrum)
     outputBuf.append(lastVal);
     const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
 
-    float rgb[3];
-    curColor.toRgb(&rgb[0], &rgb[1], &rgb[2]);
-
     dmx.SetChannel(ADJ + 5, f2dmx(intensity));
-    dmx.SetChannel(ADJ + 0, f2dmx(rgb[0]));
-    dmx.SetChannel(ADJ + 1, f2dmx(rgb[1]));
-    dmx.SetChannel(ADJ + 2, f2dmx(rgb[2]));
+    dmx.SetChannel(ADJ + 0, f2dmx(curColor.r()));
+    dmx.SetChannel(ADJ + 1, f2dmx(curColor.g()));
+    dmx.SetChannel(ADJ + 2, f2dmx(curColor.b()));
     if (!olaClient->SendDmx(universe, dmx)) {
         SDL_Log("SendDmx() failed");
     }
