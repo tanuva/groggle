@@ -26,7 +26,10 @@ static void pa_stream_notify_cb(pa_stream *stream, void* /*userdata*/)
     case PA_STREAM_FAILED:
         SDL_Log("Stream state: %i (failed)", state);
         break;
-    case PA_STREAM_READY:
+    case PA_STREAM_TERMINATED:
+        SDL_Log("Stream state: %i (terminated)", state);
+        break;
+    default:
         break;
     }
 }
@@ -69,7 +72,7 @@ static void pa_stream_read_cb(pa_stream *stream, const size_t /*nbytes*/, void *
     }
 }
 
-static void pa_server_info_cb(pa_context *ctx, const pa_server_info *info, void *userdata)
+static void pa_server_info_cb(pa_context *ctx, const pa_server_info */*info*/, void *userdata)
 {
     //SDL_Log("Default sink: %s", info->default_sink_name);
 
@@ -114,7 +117,7 @@ struct SinkInfoContainer
     std::list<std::string> sinks;
 };
 
-static void pa_sink_info_cb(pa_context *ctx, const pa_sink_info *info, int eol, void *userdata)
+static void pa_sink_info_cb(pa_context */*ctx*/, const pa_sink_info *info, int eol, void *userdata)
 {
     SinkInfoContainer *sic = reinterpret_cast<SinkInfoContainer *>(userdata);
     if (info) {
@@ -134,6 +137,9 @@ static void pa_context_notify_cb(pa_context *ctx, void *userdata)
     case PA_CONTEXT_FAILED:
         SDL_Log("Context state: %i (failed)", state);
         break;
+    case PA_CONTEXT_TERMINATED:
+        SDL_Log("Context state: %i (terminated)", state);
+        break;
     case PA_CONTEXT_READY:
         switch(purpose) {
         case Purpose::QUERY_SINKS:
@@ -143,6 +149,8 @@ static void pa_context_notify_cb(pa_context *ctx, void *userdata)
             pa_context_get_server_info(ctx, &pa_server_info_cb, userdata);
             break;
         }
+        break;
+    default:
         break;
     }
 }

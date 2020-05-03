@@ -4,6 +4,7 @@ project(groggle)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 add_executable(groggle
     src/color.cpp
     src/main.cpp

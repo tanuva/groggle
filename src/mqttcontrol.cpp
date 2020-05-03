@@ -9,7 +9,7 @@
 
 using namespace groggle;
 
-void groggle::on_publish(struct mosquitto *client, void *userdata, int mid)
+void groggle::on_publish(struct mosquitto */*client*/, void *userdata, int mid)
 {
     SDL_Log("Published: %i", mid);
     MQTT *mqtt = reinterpret_cast<MQTT*>(userdata);
@@ -17,7 +17,7 @@ void groggle::on_publish(struct mosquitto *client, void *userdata, int mid)
     mqtt->m_messagesInFlight.erase(mid);
 }
 
-void groggle::on_message(struct mosquitto *client,
+void groggle::on_message(struct mosquitto */*client*/,
                          void *userdata,
                          const struct mosquitto_message *msg)
 {

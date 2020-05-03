@@ -100,7 +100,7 @@ void lightLoop(AudioMetadataPtr meta)
 
     // "Playback" timing
     Timer timer(meta->duration /*s*/, 30 /*Hz*/);
-    timer.setCallback([meta, in, out](const long long elapsed) {
+    timer.setCallback([meta, in, out](const long long /*elapsed*/) {
         if(!olaoutput::isEnabled()) {
             return;
         }
