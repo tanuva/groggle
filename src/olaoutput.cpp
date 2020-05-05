@@ -51,7 +51,7 @@ ola::DmxBuffer dmx;
 const int ADJ = 69;
 
 static const float ORANGE = 18.0f; // TODO Move into Color
-static const Color curColor(ORANGE, 1.0f, 0.5f);
+static Color curColor(ORANGE, 1.0f, 0.5f);
 
 static std::atomic<bool> m_enabled = true; // This file should really become a class...
 
@@ -59,6 +59,16 @@ static uint8_t f2dmx(const float f)
 {
     const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
     return static_cast<uint8_t>(clamped);
+}
+
+Color color()
+{
+    return curColor;
+}
+
+void setColor(const Color &color)
+{
+    curColor = color;
 }
 
 bool isEnabled()

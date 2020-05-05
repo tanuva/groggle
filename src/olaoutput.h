@@ -13,6 +13,8 @@ namespace olaoutput
 
 void blackout();
 void init();
+Color color();
+void setColor(const Color &color);
 bool isEnabled();
 void setEnabled(const bool enabled);
 void update(const audio::Spectrum spectrum);
