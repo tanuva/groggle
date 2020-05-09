@@ -8,6 +8,5 @@ By now, *groggle* can also grab a live audio stream and work on that one. Useful
 for hooking a sound card in between the Apple TV and the stereo... ;)
 
 ## Side Constraints
+- Apply modern C++ where useful.
 - Don't use Qt (I work with it on a daily basis, it is great, but sometimes you need to see plain ANSI C++.)
-- Try to make the code look not too much OOP but maybe a little like functional code.
-
