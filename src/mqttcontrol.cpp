@@ -137,6 +137,32 @@ void MQTT::publishEnabled(const bool enabled)
     publishMessage(msg);
 }
 
+void MQTT::publishInfo()
+{
+    // The "groggle" part of the topic should ideally be a UUID.
+    // An empty payload deletes the device from HA.
+    std::shared_ptr<Message> msg = std::make_shared<Message>();
+    msg->topic = "homeassistant/light/groggle/config";
+    json payload = {
+        { "unique_id", "groggle" },
+        { "name", "Groggle" },
+        { "schema", "json" },
+        { "state_topic", "groggle" },
+        { "command_topic", "groggle/set" },
+        { "rgb", true },
+        { "hs", true },
+        { "device", {
+            { "identifiers", "groggle" },
+            { "name", "Groggle" },
+            { "sw_version", "1.0" } ,
+            { "model", "Groggle" },
+            { "manufacturer", "Marcel Kummer" }
+        }}
+    };
+    msg->setPayload(payload.dump());
+    publishMessage(msg, true);
+}
+
 void MQTT::publishMessage(const std::shared_ptr<Message> msg, const bool retain)
 {
     int res = mosquitto_publish(m_client,

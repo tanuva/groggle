@@ -133,6 +133,7 @@ void mqttLoop()
     });
 
     // Publish initial properties
+    mqtt.publishInfo();
     mqtt.publishEnabled(olaoutput::isEnabled());
 
     mqtt.run();

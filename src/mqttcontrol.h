@@ -23,6 +23,7 @@ public:
     ~MQTT();
     bool init();
     void run();
+    void publishInfo();
     void publishEnabled(const bool enabled);
     void setEnabledCallback(EnabledCb cb) { m_enabledCallback = cb; }
 
