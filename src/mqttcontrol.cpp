@@ -147,7 +147,7 @@ void MQTT::publishMessage(const std::shared_ptr<Message> msg, const bool retain)
     switch(res) {
     case MOSQ_ERR_SUCCESS:
         m_messagesInFlight.insert({msg->id, msg});
-        SDL_Log("MQTT << %s", msg->topic.c_str());
+        SDL_Log("MQTT << %s: %s", msg->topic.c_str(), msg->payload);
         break;
     default:
         SDL_Log("MQTT <x %i", res);
