@@ -16,6 +16,7 @@ add_executable(groggle
     src/mqttcontrol.cpp
 )
 
+target_include_directories(groggle PUBLIC 3rdparty)
 target_include_directories(groggle PUBLIC 3rdparty/tclap-1.2.2/include)
 #target_compile_options(groggle PUBLIC "-pthread")
 set_property(TARGET groggle

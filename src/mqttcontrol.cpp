@@ -1,5 +1,7 @@
 #include "mqttcontrol.h"
 
+#include <json.hpp>
+
 #include <SDL_log.h>
 
 #include <errno.h>
@@ -8,6 +10,7 @@
 #include <sstream>
 
 using namespace groggle;
+using json = nlohmann::json;
 
 void groggle::on_publish(struct mosquitto */*client*/, void *userdata, int mid)
 {
