@@ -126,16 +126,23 @@ void mqttLoop()
 {
     MQTT mqtt;
     mqtt.init();
+
     mqtt.setEnabledCallback([&mqtt](const bool enabled) {
         SDL_Log(">> Enabled: %i", enabled);
         olaoutput::setEnabled(enabled);
         mqtt.publishEnabled(olaoutput::isEnabled());
     });
 
+    mqtt.setColorCallback([&mqtt](const Color &color) {
+        SDL_Log(">> Hue: %f Sat: %f", color.h(), color.s());
+        olaoutput::setColor(color);
+        mqtt.publishColor(olaoutput::color());
+    });
+
     // Publish initial properties
     mqtt.publishInfo();
     mqtt.publishEnabled(olaoutput::isEnabled());
-
+    mqtt.publishColor(olaoutput::color());
     mqtt.run();
 }
 

@@ -1,6 +1,8 @@
 #ifndef MQTTCONTROL_H
 #define MQTTCONTROL_H
 
+#include "color.h"
+
 #include <mosquitto.h>
 
 #include <functional>
@@ -17,6 +19,7 @@ void on_message(struct mosquitto*, void*, const struct mosquitto_message*);
 class MQTT
 {
 public:
+    typedef std::function<void(const Color&)> ColorCb;
     typedef std::function<void(bool)> EnabledCb;
 
     MQTT();
@@ -24,6 +27,8 @@ public:
     bool init();
     void run();
     void publishInfo();
+    void publishColor(const Color &color);
+    void setColorCallback(ColorCb cb) { m_colorCallback = cb; }
     void publishEnabled(const bool enabled);
     void setEnabledCallback(EnabledCb cb) { m_enabledCallback = cb; }
 
@@ -40,10 +45,11 @@ private:
     MQTT(const MQTT&) {}
     void publishMessage(const std::shared_ptr<Message> msg, const bool retain = false);
 
+    ColorCb m_colorCallback;
     EnabledCb m_enabledCallback;
 
-    const std::string TOPIC = "groggle/";
-    const std::string TOPIC_SET = TOPIC + "set/";
+    const std::string TOPIC = "groggle";
+    const std::string TOPIC_SET = TOPIC + "/set";
 
     struct mosquitto *m_client = nullptr;
     std::unordered_map<int, std::shared_ptr<Message>> m_messagesInFlight;

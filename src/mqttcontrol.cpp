@@ -39,29 +39,46 @@ void groggle::on_message(struct mosquitto */*client*/,
     assert(mqtt);
 
     const std::string topic = msg->topic;
-    if(topic.find(mqtt->TOPIC_SET) != 0) {
-        SDL_Log("Unexpected topic: %s", topic.c_str());
-        return;
-    }
 
     if(!msg->payload) {
         SDL_Log("No payload for topic: %s", topic.c_str());
         return;
     }
 
-    // Aaaah. Clean this up!
     // Make sure to convert the payload to something safer first
     const std::string payload(reinterpret_cast<char*>(msg->payload), msg->payloadlen);
     SDL_Log("MQTT >> %s: %s", msg->topic, payload.c_str());
 
-    const std::string property = topic.substr(mqtt->TOPIC_SET.length(), std::string::npos);
-    std::stringstream ss(payload, std::ios_base::in);
-    if(property == "enabled") {
-        bool enabled = false;
-        ss >> enabled;
-        mqtt->m_enabledCallback(enabled);
-    } else {
-        SDL_Log("Unexpected property: %s", property.c_str());
+    const auto json = json::parse(payload);
+
+    if(const auto state = json.find("state"); state != json.end()) {
+        const auto stateValue = state.value();
+        if(stateValue.is_string()) {
+            if(stateValue == "ON") {
+                mqtt->m_enabledCallback(true);
+            } else if(stateValue == "OFF") {
+                mqtt->m_enabledCallback(false);
+            }
+        }
+    }
+
+    Color newColor(0, 0, 1);
+
+    if(const auto color = json.find("color"); color != json.end()) {
+        const auto colorValue = color.value();
+        if(const auto hue = colorValue.find("h"); hue != colorValue.end()) {
+            if(hue.value().is_number()) {
+                newColor.setH(hue.value());
+            }
+        }
+
+        if(const auto sat = colorValue.find("s"); sat != colorValue.end()) {
+            if(sat.value().is_number()) {
+                newColor.setS(static_cast<float>(sat.value()) / 100.0f);
+            }
+        }
+
+        mqtt->m_colorCallback(newColor);
     }
 }
 
@@ -108,7 +125,7 @@ bool MQTT::init()
     mosquitto_publish_callback_set(m_client, &on_publish);
     mosquitto_message_callback_set(m_client, &on_message);
 
-    const std::string listenTopic = TOPIC_SET + '#';
+    const std::string listenTopic = TOPIC_SET;
     int res = mosquitto_subscribe(m_client, nullptr, listenTopic.c_str(), 0);
     if(res != MOSQ_ERR_SUCCESS) {
         SDL_Log("Subscription to \"%s\" failed: %s",
@@ -125,15 +142,32 @@ void MQTT::run()
     mosquitto_loop_forever(m_client, -1, 1);
 }
 
+void MQTT::publishColor(const Color &color)
+{
+    std::shared_ptr<Message> msg = std::make_shared<Message>();
+    msg->topic = TOPIC;
+    // Creating the whole object in one statement interprets the outer object
+    // as an array for some reason. Not sure how to do it in one step.
+    json payload = json::object();
+    payload["color"] = {
+        { "h", color.h() },
+        { "s", color.s() * 100 },
+        { "r", color.r() },
+        { "g", color.g() },
+        { "b", color.b() }
+    };
+    msg->setPayload(payload.dump());
+    publishMessage(msg);
+}
+
 void MQTT::publishEnabled(const bool enabled)
 {
     std::shared_ptr<Message> msg = std::make_shared<Message>();
-    msg->topic = TOPIC + "enabled";
-
-    std::stringstream payload;
-    payload << enabled;
-    msg->setPayload(payload.str());
-
+    msg->topic = TOPIC;
+    json payload = {
+        { "state", enabled ? "ON" : "OFF" }
+    };
+    msg->setPayload(payload.dump());
     publishMessage(msg);
 }
 
