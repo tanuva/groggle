@@ -37,7 +37,7 @@ private:
     };
 
     MQTT(const MQTT&) {}
-    void publishMessage(const std::shared_ptr<Message> msg);
+    void publishMessage(const std::shared_ptr<Message> msg, const bool retain = false);
 
     EnabledCb m_enabledCallback;
 

@@ -134,7 +134,7 @@ void MQTT::publishEnabled(const bool enabled)
     publishMessage(msg);
 }
 
-void MQTT::publishMessage(const std::shared_ptr<Message> msg)
+void MQTT::publishMessage(const std::shared_ptr<Message> msg, const bool retain)
 {
     int res = mosquitto_publish(m_client,
         &msg->id,
@@ -142,7 +142,7 @@ void MQTT::publishMessage(const std::shared_ptr<Message> msg)
         strlen(msg->payload),
         msg->payload,
         0,
-        false);
+        retain);
 
     switch(res) {
     case MOSQ_ERR_SUCCESS:
