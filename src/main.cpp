@@ -77,7 +77,7 @@ static audio::Spectrum transform(const int16_t data[], const size_t sampleCount,
     return spectrum;
 }
 
-void lightLoop(AudioMetadataPtr meta)
+void lightLoop(AudioMetadataPtr meta, std::shared_ptr<OlaOutput> olaOutput)
 {
     // Hack. Wait for the first audio data to arrive so that we can compute the
     // frequency data that is printed below.
@@ -100,8 +100,8 @@ void lightLoop(AudioMetadataPtr meta)
 
     // "Playback" timing
     Timer timer(meta->duration /*s*/, 30 /*Hz*/);
-    timer.setCallback([meta, in, out](const long long /*elapsed*/) {
-        if(!olaoutput::isEnabled()) {
+    timer.setCallback([meta, in, out, olaOutput](const long long /*elapsed*/) {
+        if(!olaOutput->isEnabled()) {
             return;
         }
 
@@ -111,38 +111,38 @@ void lightLoop(AudioMetadataPtr meta)
         const uint32_t dataPos = std::min(meta->position / 2, sampleCount - FRAME_SIZE * meta->fileSpec.channels);
         const audio::Spectrum spectrum = transform(&data[dataPos], FRAME_SIZE, meta->fileSpec.channels, in, out);
         meta->mutex.unlock();
-        olaoutput::update(spectrum);
+        olaOutput->update(spectrum);
     });
     timer.run();
 
     fftwf_free(out);
     fftwf_free(in);
 
-    olaoutput::blackout();
+    olaOutput->blackout();
     SDL_Log("Light thread done.");
 }
 
-void mqttLoop()
+void mqttLoop(std::shared_ptr<OlaOutput> olaOutput)
 {
     MQTT mqtt;
     mqtt.init();
 
-    mqtt.setEnabledCallback([&mqtt](const bool enabled) {
+    mqtt.setEnabledCallback([&mqtt, olaOutput](const bool enabled) {
         SDL_Log(">> Enabled: %i", enabled);
-        olaoutput::setEnabled(enabled);
-        mqtt.publishEnabled(olaoutput::isEnabled());
+        olaOutput->setEnabled(enabled);
+        mqtt.publishEnabled(olaOutput->isEnabled());
     });
 
-    mqtt.setColorCallback([&mqtt](const Color &color) {
+    mqtt.setColorCallback([&mqtt, olaOutput](const Color &color) {
         SDL_Log(">> Hue: %f Sat: %f", color.h(), color.s());
-        olaoutput::setColor(color);
-        mqtt.publishColor(olaoutput::color());
+        olaOutput->setColor(color);
+        mqtt.publishColor(olaOutput->color());
     });
 
     // Publish initial properties
     mqtt.publishInfo();
-    mqtt.publishEnabled(olaoutput::isEnabled());
-    mqtt.publishColor(olaoutput::color());
+    mqtt.publishEnabled(olaOutput->isEnabled());
+    mqtt.publishColor(olaOutput->color());
     mqtt.run();
 }
 
@@ -276,15 +276,14 @@ int main(const int argc, const char **argv)
         return 0;
     }
 
-    std::thread mqttThread(mqttLoop);
 
     AudioMetadataPtr meta = std::make_shared<AudioMetadata>();
     // TODO Use PA's default sink monitor as input device
     meta->inputName = options.inputName;
 
-    // Launch the lighting thread
-    olaoutput::init();
-    std::thread lightThread(lightLoop, meta);
+    auto olaOutput = std::make_shared<OlaOutput>();
+    std::thread lightThread(lightLoop, meta, olaOutput);
+    std::thread mqttThread(mqttLoop, olaOutput);
 
     switch (options.inputType) {
     case Options::InputType::DEVICE:

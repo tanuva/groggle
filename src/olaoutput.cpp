@@ -1,7 +1,6 @@
 #include "olaoutput.h"
 #include "spectrum.h"
 
-#include <ola/DmxBuffer.h>
 #include <ola/Logging.h>
 #include <ola/client/StreamingClient.h>
 
@@ -12,8 +11,6 @@
 #include <deque>
 
 namespace groggle
-{
-namespace olaoutput
 {
 
 template <typename T>
@@ -44,63 +41,25 @@ private:
     std::deque<T> m_values;
 };
 
-const unsigned int universe = 1; // universe to use for sending data
-ola::client::StreamingClient *olaClient = nullptr;
-ola::DmxBuffer dmx;
-
-const int ADJ = 69;
-
-static const float ORANGE = 18.0f; // TODO Move into Color
-static Color curColor(ORANGE, 1.0f, 0.5f);
-
-static std::atomic<bool> m_enabled = true; // This file should really become a class...
-
 static uint8_t f2dmx(const float f)
 {
     const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
     return static_cast<uint8_t>(clamped);
 }
 
-Color color()
-{
-    return curColor;
-}
+static const float ORANGE = 18.0f; // TODO Move into Color
 
-void setColor(const Color &color)
-{
-    curColor = color;
-}
-
-bool isEnabled()
-{
-    return m_enabled;
-}
-
-void setEnabled(const bool enabled)
-{
-    if (m_enabled && !enabled) {
-        blackout();
-    }
-
-    m_enabled = enabled;
-}
-
-void blackout()
-{
-    dmx.Blackout();
-    olaClient->SendDmx(universe, dmx);
-}
-
-void init()
+OlaOutput::OlaOutput()
+    : m_color(ORANGE, 1.0f, 0.5f)
 {
     // turn on OLA logging
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
     // Create a new client.
-    olaClient = new ola::client::StreamingClient((ola::client::StreamingClient::Options()));
+    m_olaClient = new ola::client::StreamingClient((ola::client::StreamingClient::Options()));
 
     // Setup the client, this connects to the server
-    if (!olaClient->Setup()) {
+    if (!m_olaClient->Setup()) {
         SDL_Log("Setup failed");
         return;
     }
@@ -108,14 +67,44 @@ void init()
     blackout();
 }
 
-void update(const audio::Spectrum spectrum)
+Color OlaOutput::color()
+{
+    return m_color;
+}
+
+void OlaOutput::setColor(const Color &color)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_color = color;
+}
+
+void OlaOutput::setEnabled(const bool enabled)
+{
+    if (m_enabled && !enabled) {
+        blackout();
+    }
+
+    // Lock after blackout, it also acquires a lock!
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_enabled = enabled;
+}
+
+void OlaOutput::blackout()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_dmx.Blackout();
+    m_olaClient->SendDmx(m_universe, m_dmx);
+}
+
+void OlaOutput::update(const audio::Spectrum spectrum)
 {
     /* Tripar:
      * 1-3: RGB
      * 6: Dimmer
      */
 
-    float val = spectrum.get(audio::Band::LOW);
+    std::lock_guard<std::mutex> lock(m_mutex);
+    float val = spectrum.front();
 
     static float lastVal = 0;
     if (val > lastVal) {
@@ -128,14 +117,13 @@ void update(const audio::Spectrum spectrum)
     outputBuf.append(lastVal);
     const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
 
-    dmx.SetChannel(ADJ + 5, f2dmx(intensity));
-    dmx.SetChannel(ADJ + 0, f2dmx(curColor.r()));
-    dmx.SetChannel(ADJ + 1, f2dmx(curColor.g()));
-    dmx.SetChannel(ADJ + 2, f2dmx(curColor.b()));
-    if (!olaClient->SendDmx(universe, dmx)) {
+    m_dmx.SetChannel(m_adj + 5, f2dmx(intensity));
+    m_dmx.SetChannel(m_adj + 0, f2dmx(m_color.r()));
+    m_dmx.SetChannel(m_adj + 1, f2dmx(m_color.g()));
+    m_dmx.SetChannel(m_adj + 2, f2dmx(m_color.b()));
+    if (!m_olaClient->SendDmx(m_universe, m_dmx)) {
         SDL_Log("SendDmx() failed");
     }
 }
 
-}
 }
