@@ -1,6 +1,6 @@
 #include "mqttcontrol.h"
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <SDL_log.h>
 

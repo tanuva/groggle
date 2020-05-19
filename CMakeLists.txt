@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 add_compile_options(-Wall -Wextra -pedantic -Werror)
+# nlohmann_json
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(3rdparty/nlohmann_json)
+
 add_executable(groggle
     src/color.cpp
     src/main.cpp
@@ -76,3 +80,7 @@ find_library(MOSQUITTO_LIBRARY
 
 target_include_directories(groggle PUBLIC ${MOSQUITTO_INCLUDE_DIR})
 target_link_libraries(groggle ${MOSQUITTO_LIBRARY})
+
+# nlohmann_json
+target_include_directories(groggle PUBLIC 3rdparty/nlohmann_json/include)
+target_link_libraries(groggle nlohmann_json::nlohmann_json)
