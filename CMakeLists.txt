@@ -21,8 +21,8 @@ add_executable(groggle
 )
 
 target_include_directories(groggle PUBLIC 3rdparty)
-target_include_directories(groggle PUBLIC 3rdparty/tclap-1.2.2/include)
 #target_compile_options(groggle PUBLIC "-pthread")
+target_include_directories(groggle SYSTEM PUBLIC 3rdparty/tclap-1.2.2/include)
 set_property(TARGET groggle
     APPEND PROPERTY
     LINK_FLAGS "-pthread"
