@@ -4,7 +4,6 @@ project(groggle)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
-add_compile_options(-Wall -Wextra -pedantic -Werror)
 # nlohmann_json
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(3rdparty/nlohmann_json)
@@ -20,9 +19,8 @@ add_executable(groggle
     src/mqttcontrol.cpp
 )
 
-target_include_directories(groggle PUBLIC 3rdparty)
-#target_compile_options(groggle PUBLIC "-pthread")
 target_include_directories(groggle SYSTEM PUBLIC 3rdparty/tclap-1.2.2/include)
+target_compile_options(groggle PUBLIC -Wall -Wextra -pedantic -Werror)
 set_property(TARGET groggle
     APPEND PROPERTY
     LINK_FLAGS "-pthread"
