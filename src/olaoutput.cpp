@@ -104,7 +104,7 @@ void OlaOutput::update(const audio::Spectrum spectrum)
      */
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    float val = spectrum.front();
+    const float val = spectrum.at(1);
 
     static float lastVal = 0;
     if (val > lastVal) {

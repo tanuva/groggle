@@ -66,10 +66,11 @@ static audio::Spectrum transform(const int16_t data[], const size_t sampleCount,
     // Scaling: http://fftw.org/fftw3_doc/The-1d-Discrete-Fourier-Transform-_0028DFT_0029.html#The-1d-Discrete-Fourier-Transform-_0028DFT_0029
     const float scaleFactor = 2.0f / sampleCount;
 
+    // Store intensities for each frequency bucket at one point in time.
     audio::Spectrum spectrum;
-    spectrum.add(audio::Band::LOW, magnitude(out[1]) * scaleFactor);
-    spectrum.add(audio::Band::MID, magnitude(out[10]) * scaleFactor);
-    spectrum.add(audio::Band::HIGH, magnitude(out[20]) * scaleFactor);
+    for(size_t i = 0; i < sampleCount / channels; i++) {
+        spectrum.push_back(magnitude(out[i]) * scaleFactor);
+    }
 
     // TODO Print something like a graphic equalizer? Render with SDL?
 
@@ -89,6 +90,7 @@ void lightLoop(AudioMetadataPtr meta, std::shared_ptr<OlaOutput> olaOutput)
 
     // The amount of frames analyzed at a time. Also determines the frequency
     // resolution of the Fourier transformation.
+    // TODO Um. Size or count? What is this?
     static const int FRAME_SIZE = 1024;
     const int freqStep = floor(meta->fileSpec.freq / (float)FRAME_SIZE);
     SDL_Log("Frequency bucket size: %i Hz", freqStep);
