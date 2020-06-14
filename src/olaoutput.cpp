@@ -13,6 +13,7 @@
 namespace groggle
 {
 
+#if 0
 template <typename T>
 class Buffer
 {
@@ -40,6 +41,7 @@ private:
     size_t m_desiredSize;
     std::deque<T> m_values;
 };
+#endif
 
 static uint8_t f2dmx(const float f)
 {
@@ -113,9 +115,7 @@ void OlaOutput::update(const audio::Spectrum spectrum)
         lastVal *= 0.9f;
     }
 
-    static Buffer<float> outputBuf(3);
-    outputBuf.append(lastVal);
-    const float intensity = outputBuf.average() * 2.0f; // TODO Configurable scaling factor!
+    const float intensity = lastVal * 2.0f; // TODO Configurable scaling factor!
 
     m_dmx.SetChannel(m_adj + 5, f2dmx(intensity));
     m_dmx.SetChannel(m_adj + 0, f2dmx(m_color.r()));
