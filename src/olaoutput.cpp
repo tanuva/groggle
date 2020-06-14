@@ -108,14 +108,13 @@ void OlaOutput::update(const audio::Spectrum spectrum)
     std::lock_guard<std::mutex> lock(m_mutex);
     const float val = spectrum.at(1);
 
-    static float lastVal = 0;
-    if (val > lastVal) {
-        lastVal = val;
+    if (val > m_intensity) {
+        m_intensity = val;
     } else {
-        lastVal *= 0.9f;
+        m_intensity *= 0.9f;
     }
 
-    const float intensity = lastVal * 2.0f; // TODO Configurable scaling factor!
+    const float intensity = m_intensity * 2.0f; // TODO Configurable scaling factor!
 
     m_dmx.SetChannel(m_adj + 5, f2dmx(intensity));
     m_dmx.SetChannel(m_adj + 0, f2dmx(m_color.r()));

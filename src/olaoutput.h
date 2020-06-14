@@ -31,6 +31,7 @@ private:
     const unsigned int m_universe = 1; // universe to use for sending data
     const int m_adj = 69;
     Color m_color;
+    float m_intensity = 0;
     bool m_enabled = true;
 };
 
