@@ -103,8 +103,8 @@ static void pa_server_info_cb(pa_context *ctx, const pa_server_info */*info*/, v
     pa_stream_set_state_callback(stream, &pa_stream_notify_cb, userdata);
     pa_stream_set_read_callback(stream, &pa_stream_read_cb, userdata);
 
-    if (pa_stream_connect_record(stream, meta->inputName.c_str(), nullptr, PA_STREAM_NOFLAGS) != 0) {
-        SDL_Log("PulseAudio failed to connect to \"%s\" for recording", meta->inputName.c_str());
+    if (pa_stream_connect_record(stream, meta->audioDevice.c_str(), nullptr, PA_STREAM_NOFLAGS) != 0) {
+        SDL_Log("PulseAudio failed to connect to \"%s\" for recording", meta->audioDevice.c_str());
         return;
     }
 

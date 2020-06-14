@@ -35,7 +35,8 @@ struct Options
     };
     InputType inputType;
 
-    std::string inputName;
+    std::string audioDevice;
+    std::string inputFile;
     bool listDevices;
 };
 
@@ -175,13 +176,13 @@ bool parseArgs(const int argc, const char **argv, Options *options)
     try {
         CmdLine cmd("", ' ', "0.1");
 
-        ValueArg<std::string> inputArg("i",
-                                       "input",
-                                       "Input device name",
+        ValueArg<std::string> deviceArg("d",
+                                       "device",
+                                       "Audio device name",
                                        false,
                                        "",
                                        "string");
-        cmd.add(inputArg);
+        cmd.add(deviceArg);
 
         SwitchArg devicesArg("l",
                              "list-devices",
@@ -199,21 +200,9 @@ bool parseArgs(const int argc, const char **argv, Options *options)
 
         cmd.parse(argc, argv);
         options->inputType = fileNameArg.isSet() ? Options::InputType::FILE : Options::InputType::DEVICE;
-        switch (options->inputType) {
-            case Options::InputType::FILE:
-                options->inputName = fileNameArg.getValue();
-                break;
-            case Options::InputType::DEVICE:
-                options->inputName = inputArg.getValue();
-                break;
-            default:
-                assert(false && "Unexpected input type");
-        }
+        options->inputFile = fileNameArg.getValue();
+        options->audioDevice = deviceArg.getValue();
         options->listDevices = devicesArg.getValue();
-
-        if (fileNameArg.isSet() && inputArg.isSet()) {
-            throw ArgException("Cannot set input file and input device at the same time.", "fileName");
-        }
     } catch (ArgException &e) {
         std::cerr << "Failed to parse command line: " << e.argId() << ": " << e.error() << std::endl;
         return false;
@@ -241,12 +230,12 @@ int liveMain(std::thread lightThread, AudioMetadataPtr meta)
 int fileMain(std::thread lightThread, AudioMetadataPtr meta)
 {
     if (!audio::sdl::loadFile(meta)) {
-        SDL_Log("Error loading \"%s\": %s", meta->inputName.c_str(), SDL_GetError());
+        SDL_Log("Error loading \"%s\": %s", meta->inputFile.c_str(), SDL_GetError());
         return -1;
     }
 
     if (!audio::sdl::openOutputDevice(meta)) {
-        SDL_Log("Error opening audio device: %s", SDL_GetError());
+        SDL_Log("Error opening audio device \"%s\": %s", meta->audioDevice.c_str(), SDL_GetError());
         return -1;
     }
 
@@ -281,7 +270,8 @@ int main(const int argc, const char **argv)
 
     AudioMetadataPtr meta = std::make_shared<AudioMetadata>();
     // TODO Use PA's default sink monitor as input device
-    meta->inputName = options.inputName;
+    meta->audioDevice = options.audioDevice;
+    meta->inputFile = options.inputFile;
 
     auto olaOutput = std::make_shared<OlaOutput>();
     std::thread lightThread(lightLoop, meta, olaOutput);

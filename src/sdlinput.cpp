@@ -39,7 +39,7 @@ bool audio::sdl::openInputDevice(AudioMetadataPtr meta)
     want.callback = &inputCallback;
     want.userdata = meta.get();
 
-    meta->audioDeviceID = SDL_OpenAudioDevice(meta->inputName.c_str(), true, &want, &have, 0);
+    meta->audioDeviceID = SDL_OpenAudioDevice(meta->audioDevice.c_str(), true, &want, &have, 0);
     if (meta->audioDeviceID == 0) {
         return false;
     }
@@ -75,7 +75,7 @@ bool audio::sdl::openOutputDevice(AudioMetadataPtr meta)
     want.callback = &outputCallback;
     want.userdata = meta.get();
 
-    meta->audioDeviceID = SDL_OpenAudioDevice(meta->inputName.c_str(), false, &want, &have, 0);
+    meta->audioDeviceID = SDL_OpenAudioDevice(meta->audioDevice.c_str(), false, &want, &have, 0);
     if (meta->audioDeviceID == 0) {
         return false;
     }
@@ -99,7 +99,7 @@ bool audio::sdl::loadFile(AudioMetadataPtr meta)
 {
     //std::lock_guard<std::mutex>(meta->mutex);
     meta->mutex.lock();
-    if (SDL_LoadWAV(meta->inputName.c_str(), &meta->fileSpec, &meta->data, &meta->dataSize) == 0) {
+    if (SDL_LoadWAV(meta->inputFile.c_str(), &meta->fileSpec, &meta->data, &meta->dataSize) == 0) {
         return false;
     }
 
