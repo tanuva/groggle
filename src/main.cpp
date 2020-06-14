@@ -68,8 +68,9 @@ static audio::Spectrum transform(const int16_t data[], const size_t sampleCount,
     const float scaleFactor = 2.0f / sampleCount;
 
     // Store intensities for each frequency bucket at one point in time.
+    // Only copy the first half: positive frequencies. See above link. (Not sure about this.)
     audio::Spectrum spectrum;
-    for(size_t i = 0; i < sampleCount / channels; i++) {
+    for(size_t i = 0; i < sampleCount / channels / 2; i++) {
         spectrum.push_back(magnitude(out[i]) * scaleFactor);
     }
 
@@ -94,6 +95,7 @@ void lightLoop(AudioMetadataPtr meta, std::shared_ptr<OlaOutput> olaOutput)
     // TODO Um. Size or count? What is this?
     static const int FRAME_SIZE = 1024;
     const int freqStep = floor(meta->fileSpec.freq / (float)FRAME_SIZE);
+    SDL_Log("Buckets: %i", FRAME_SIZE / 2);
     SDL_Log("Frequency bucket size: %i Hz", freqStep);
     SDL_Log("Max frequency: %i Hz", FRAME_SIZE / 2 * freqStep);
 
