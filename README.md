@@ -5,7 +5,8 @@ it at FFTW3 and produced some DMX data from the result. (Yeah, sounds simple
 at first. :))
 
 By now, *groggle* can also grab a live audio stream and work on that one. Useful
-for hooking a sound card in between the Apple TV and the stereo... ;)
+for hooking a sound card in between the Apple TV and the stereo... ;) In the end,
+this aims to be a living room-compatible ambient light.
 
 ## Side Constraints
 - Apply modern C++ where useful.
