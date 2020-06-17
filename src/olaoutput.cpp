@@ -1,4 +1,6 @@
 #include "olaoutput.h"
+
+#include "ringbuffer.h"
 #include "spectrum.h"
 
 #include <ola/Logging.h>
@@ -12,36 +14,6 @@
 
 namespace groggle
 {
-
-#if 0
-template <typename T>
-class Buffer
-{
-public:
-    Buffer(const size_t size)
-        : m_desiredSize(size)
-    {}
-
-    void append(T t) {
-        m_values.push_back(t);
-        while (m_values.size() > m_desiredSize) {
-            m_values.pop_front();
-        }
-    }
-
-    T average() const {
-        T avg = 0;
-        for (const T v : m_values) {
-            avg += v;
-        }
-        return avg / (m_values.size() > 0 ? m_values.size() : 1);
-    }
-
-private:
-    size_t m_desiredSize;
-    std::deque<T> m_values;
-};
-#endif
 
 static uint8_t f2dmx(const float f)
 {
