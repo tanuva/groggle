@@ -2,6 +2,7 @@
 #define OLAOUTPUT_H
 
 #include "color.h"
+#include "ringbuffer.h"
 #include "spectrum.h"
 
 #include <ola/DmxBuffer.h>
@@ -32,6 +33,7 @@ private:
     const int m_adj = 69;
     Color m_color;
     float m_intensity = 0;
+    RingBuffer<float> m_magnitudeBuf;
     bool m_enabled = true;
 };
 

@@ -1,6 +1,5 @@
 #include "olaoutput.h"
 
-#include "ringbuffer.h"
 #include "spectrum.h"
 
 #include <ola/Logging.h>
@@ -25,6 +24,7 @@ static const float ORANGE = 18.0f; // TODO Move into Color
 
 OlaOutput::OlaOutput()
     : m_color(ORANGE, 1.0f, 0.5f)
+    , m_magnitudeBuf(64)
 {
     // turn on OLA logging
     ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
@@ -86,9 +86,10 @@ void OlaOutput::update(const audio::Spectrum spectrum)
         m_intensity *= 0.9f;
     }
 
-    const float intensity = m_intensity * 2.0f; // TODO Configurable scaling factor!
+    m_magnitudeBuf.append(val);
+    const float scale = 0.5 * 1.0 / std::max(m_magnitudeBuf.average(), 0.01f);
 
-    m_dmx.SetChannel(m_adj + 5, f2dmx(intensity));
+    m_dmx.SetChannel(m_adj + 5, f2dmx(m_intensity * scale));
     m_dmx.SetChannel(m_adj + 0, f2dmx(m_color.r()));
     m_dmx.SetChannel(m_adj + 1, f2dmx(m_color.g()));
     m_dmx.SetChannel(m_adj + 2, f2dmx(m_color.b()));
