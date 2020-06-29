@@ -135,19 +135,18 @@ void mqttLoop(std::shared_ptr<OlaOutput> olaOutput)
     mqtt.setEnabledCallback([&mqtt, olaOutput](const bool enabled) {
         SDL_Log(">> Enabled: %i", enabled);
         olaOutput->setEnabled(enabled);
-        mqtt.publishEnabled(olaOutput->isEnabled());
+        mqtt.publishState(olaOutput->isEnabled(), olaOutput->color());
     });
 
     mqtt.setColorCallback([&mqtt, olaOutput](const Color &color) {
         SDL_Log(">> Hue: %f Sat: %f", color.h(), color.s());
         olaOutput->setColor(color);
-        mqtt.publishColor(olaOutput->color());
+        mqtt.publishState(olaOutput->isEnabled(), olaOutput->color());
     });
 
     // Publish initial properties
     mqtt.publishInfo();
-    mqtt.publishEnabled(olaOutput->isEnabled());
-    mqtt.publishColor(olaOutput->color());
+    mqtt.publishState(olaOutput->isEnabled(), olaOutput->color());
     mqtt.run();
 }
 

@@ -27,9 +27,8 @@ public:
     bool init();
     void run();
     void publishInfo();
-    void publishColor(const Color &color);
+    void publishState(const bool enabled, const Color &color);
     void setColorCallback(ColorCb cb) { m_colorCallback = cb; }
-    void publishEnabled(const bool enabled);
     void setEnabledCallback(EnabledCb cb) { m_enabledCallback = cb; }
 
 private:

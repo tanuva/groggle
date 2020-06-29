@@ -142,33 +142,24 @@ void MQTT::run()
     mosquitto_loop_forever(m_client, -1, 1);
 }
 
-void MQTT::publishColor(const Color &color)
+void MQTT::publishState(const bool enabled, const Color &color)
 {
     std::shared_ptr<Message> msg = std::make_shared<Message>();
     msg->topic = TOPIC;
     // Creating the whole object in one statement interprets the outer object
     // as an array for some reason. Not sure how to do it in one step.
-    json payload = json::object();
-    payload["color"] = {
-        { "h", color.h() },
-        { "s", color.s() * 100 },
-        { "r", color.r() },
-        { "g", color.g() },
-        { "b", color.b() }
-    };
-    msg->setPayload(payload.dump());
-    publishMessage(msg);
-}
-
-void MQTT::publishEnabled(const bool enabled)
-{
-    std::shared_ptr<Message> msg = std::make_shared<Message>();
-    msg->topic = TOPIC;
     json payload = {
-        { "state", enabled ? "ON" : "OFF" }
+        { "state", enabled ? "ON" : "OFF" },
+        { "color", {
+            { "h", color.h() },
+            { "s", color.s() * 100 },
+            { "r", color.r() },
+            { "g", color.g() },
+            { "b", color.b() }
+        }}
     };
     msg->setPayload(payload.dump());
-    publishMessage(msg);
+    publishMessage(msg, true);
 }
 
 void MQTT::publishInfo()
