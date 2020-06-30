@@ -16,6 +16,7 @@ public:
         return static_cast<uint8_t>(clamped);
     }
 
+    Color(): Color(0, 0, 0) {}
     Color(const float h, const float s, const float l);
     Color(const Color &other);
 
