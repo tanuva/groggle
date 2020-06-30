@@ -1,12 +1,21 @@
 #ifndef COLOR
 #define COLOR
 
+#include <algorithm> // min, max
+#include <cmath>
+#include <cstdint>
+
 namespace groggle
 {
 
 class Color
 {
 public:
+    static inline uint8_t f2uint8(const float f) {
+        const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
+        return static_cast<uint8_t>(clamped);
+    }
+
     Color(const float h, const float s, const float l);
 
     float h() const { return m_h; }

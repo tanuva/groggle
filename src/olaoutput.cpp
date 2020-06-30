@@ -7,18 +7,10 @@
 
 #include <SDL_log.h>
 
-#include <algorithm> // min, max
-#include <cmath>
 #include <deque>
 
 namespace groggle
 {
-
-static uint8_t f2dmx(const float f)
-{
-    const float clamped = round(std::min(std::max(f * 255, 0.0f), 255.0f));
-    return static_cast<uint8_t>(clamped);
-}
 
 static const float ORANGE = 18.0f; // TODO Move into Color
 
@@ -89,10 +81,10 @@ void OlaOutput::update(const audio::Spectrum spectrum)
     m_magnitudeBuf.append(val);
     const float scale = 0.5 * 1.0 / std::max(m_magnitudeBuf.average(), 0.01f);
 
-    m_dmx.SetChannel(m_adj + 5, f2dmx(m_intensity * scale));
-    m_dmx.SetChannel(m_adj + 0, f2dmx(m_color.r()));
-    m_dmx.SetChannel(m_adj + 1, f2dmx(m_color.g()));
-    m_dmx.SetChannel(m_adj + 2, f2dmx(m_color.b()));
+    m_dmx.SetChannel(m_adj + 5, Color::f2uint8(m_intensity * scale));
+    m_dmx.SetChannel(m_adj + 0, Color::f2uint8(m_color.r()));
+    m_dmx.SetChannel(m_adj + 1, Color::f2uint8(m_color.g()));
+    m_dmx.SetChannel(m_adj + 2, Color::f2uint8(m_color.b()));
     if (!m_olaClient->SendDmx(m_universe, m_dmx)) {
         SDL_Log("SendDmx() failed");
     }
