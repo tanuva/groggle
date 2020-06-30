@@ -153,9 +153,9 @@ void MQTT::publishState(const bool enabled, const Color &color)
         { "color", {
             { "h", color.h() },
             { "s", color.s() * 100 },
-            { "r", color.r() },
-            { "g", color.g() },
-            { "b", color.b() }
+            { "r", Color::f2uint8(color.r()) },
+            { "g", Color::f2uint8(color.g()) },
+            { "b", Color::f2uint8(color.b()) }
         }}
     };
     msg->setPayload(payload.dump());
