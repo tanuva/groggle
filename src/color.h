@@ -17,6 +17,7 @@ public:
     }
 
     Color(const float h, const float s, const float l);
+    Color(const Color &other);
 
     float h() const { return m_h; }
     void setH(const float h) { m_h = h; toRgb(); }

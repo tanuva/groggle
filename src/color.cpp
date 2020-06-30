@@ -17,6 +17,14 @@ Color::Color(const float h, const float s, const float l)
     toRgb();
 }
 
+Color::Color(const Color &other)
+{
+    m_h = other.h();
+    m_s = other.s();
+    m_l = other.l();
+    toRgb();
+}
+
 void Color::toRgb()
 {
     // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
