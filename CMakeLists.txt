@@ -82,3 +82,12 @@ target_link_libraries(groggle ${MOSQUITTO_LIBRARY})
 # nlohmann_json
 target_include_directories(groggle PUBLIC 3rdparty/nlohmann_json/include)
 target_link_libraries(groggle nlohmann_json::nlohmann_json)
+
+# Unit Tests
+add_executable(tests
+    3rdparty/catch2/catch_amalgamated.cpp
+    src/tests.cpp
+    src/color.cpp
+)
+
+target_include_directories(tests SYSTEM PUBLIC 3rdparty)
