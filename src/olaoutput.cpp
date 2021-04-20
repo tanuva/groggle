@@ -79,7 +79,8 @@ void OlaOutput::update(const audio::Spectrum spectrum)
     }
 
     m_magnitudeBuf.append(val);
-    const float scale = 0.5 * 1.0 / std::max(m_magnitudeBuf.average(), 0.01f);
+    //const float scale = 0.5 * 1.0 / std::max(m_magnitudeBuf.average(), 0.01f);
+    const float scale = 1.0;
 
     m_dmx.SetChannel(m_adj + 5, Color::f2uint8(m_intensity * scale));
     m_dmx.SetChannel(m_adj + 0, Color::f2uint8(m_color.r()));
