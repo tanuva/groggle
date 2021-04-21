@@ -5,14 +5,14 @@
 
 using namespace groggle;
 
-Color::Color(const float h, const float s, const float l)
+Color::Color(const float h, const float s, const float v)
 {
     assert(h >= 0 && h < 360);
     assert(s >= 0 && s <= 1);
-    assert(l >= 0 && l <= 1);
+    assert(v >= 0 && v <= 1);
     m_h = h;
     m_s = s;
-    m_l = l;
+    m_v = v;
 
     toRgb();
 }
@@ -21,33 +21,57 @@ Color::Color(const Color &other)
 {
     m_h = other.h();
     m_s = other.s();
-    m_l = other.l();
+    m_v = other.v();
     toRgb();
-}
-
-static float k(const int n, const float h)
-{
-    // (n + H / 30) mod 12
-    // The modulus shall preserve the fractional component.
-    const float tmp = n + h / 30.0f;
-    const float frac = tmp - std::floor(tmp);
-    return (static_cast<int>(floor(tmp)) % 12) + frac;
-}
-
-static float f(const int n, const float a, const float h, const float l)
-{
-    // f(n) = L - a * max(-1, min(k - 3, 9 - k, 1))
-    return l - a * std::max(-1.0f,
-                            std::min(1.0f,
-                                     std::min(k(n, h) - 3.0f,
-                                              9.0f - k(n, h))));
 }
 
 void Color::toRgb()
 {
-    // Source: https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
-    const float a = m_s * std::min(m_l, 1.0f - m_l);
-    m_r = f(0, a, m_h, m_l);
-    m_g = f(8, a, m_h, m_l);
-    m_b = f(4, a, m_h, m_l);
+    // Source: https://de.wikipedia.org/wiki/HSV-Farbraum#Umrechnung_HSV_in_RGB
+    if (m_s == 0) {
+        m_r = m_v;
+        m_g = m_v;
+        m_b = m_v;
+        return;
+    }
+
+    const int hi = std::floor(m_h / 60.0);
+    const float f = m_h / 60.0 - hi;
+    const float p = m_v * (1.0 - m_s);
+    const float q = m_v * (1.0 - m_s * f);
+    const float t = m_v * (1.0 - m_s * (1.0 - f));
+
+    switch(hi) {
+    case 0:
+    case 6:
+        m_r = m_v;
+        m_g = t;
+        m_b = p;
+        break;
+    case 1:
+        m_r = q;
+        m_g = m_v;
+        m_b = p;
+        break;
+    case 2:
+        m_r = p;
+        m_g = m_v;
+        m_b = t;
+        break;
+    case 3:
+        m_r = p;
+        m_g = q;
+        m_b = m_v;
+        break;
+    case 4:
+        m_r = t;
+        m_g = p;
+        m_b = m_v;
+        break;
+    case 5:
+        m_r = m_v;
+        m_g = p;
+        m_b = q;
+        break;
+    }
 }

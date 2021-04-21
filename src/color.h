@@ -17,13 +17,13 @@ public:
     }
 
     Color(): Color(0, 0, 0) {}
-    Color(const float h, const float s, const float l);
+    Color(const float h, const float s, const float v);
     Color(const Color &other);
 
     bool operator==(const Color &other) {
         return m_h == other.h()
             && m_s == other.s()
-            && m_l == other.l();
+            && m_v == other.v();
     }
 
     bool operator!=(const Color &other) {
@@ -34,8 +34,8 @@ public:
     void setH(const float h) { m_h = h; toRgb(); }
     float s() const { return m_s; }
     void setS(const float s) { m_s = s; toRgb(); }
-    float l() const { return m_l; }
-    void setL(const float l) { m_l = l; toRgb(); }
+    float v() const { return m_v; }
+    void setV(const float v) { m_v = v; toRgb(); }
 
     float r() const { return m_r; }
     float g() const { return m_g; }
@@ -46,7 +46,7 @@ private:
 
     float m_h = 0;
     float m_s = 0;
-    float m_l = 0;
+    float m_v = 0;
     float m_r = 0;
     float m_g = 0;
     float m_b = 0;

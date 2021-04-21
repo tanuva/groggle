@@ -52,7 +52,7 @@ void groggle::on_message(struct mosquitto */*client*/,
 
     const auto json = json::parse(payload);
     State newState;
-    newState.color.setL(0.5f);
+    newState.color.setV(1); // Luminance is not provided by HASS, assume 1.
 
     if(const auto state = json.find("state"); state != json.end()) {
         const auto stateValue = state.value();
