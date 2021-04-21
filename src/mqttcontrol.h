@@ -8,6 +8,7 @@
 #include <functional>
 #include <unordered_map>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace groggle
@@ -51,6 +52,7 @@ private:
     const std::string TOPIC_SET = TOPIC + "/set";
 
     struct mosquitto *m_client = nullptr;
+    std::mutex m_messagesMutex;
     std::unordered_map<int, std::shared_ptr<Message>> m_messagesInFlight;
 
     // Mosquitto library callbacks

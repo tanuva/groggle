@@ -17,6 +17,7 @@ void groggle::on_publish(struct mosquitto */*client*/, void *userdata, int mid)
     SDL_Log("Published: %i", mid);
     MQTT *mqtt = reinterpret_cast<MQTT*>(userdata);
     assert(mqtt);
+    std::lock_guard<std::mutex> lock(mqtt->m_messagesMutex);
     mqtt->m_messagesInFlight.erase(mid);
 }
 
@@ -190,6 +191,7 @@ void MQTT::publishInfo()
 
 void MQTT::publishMessage(const std::shared_ptr<Message> msg, const bool retain)
 {
+    std::lock_guard<std::mutex> lock(m_messagesMutex);
     int res = mosquitto_publish(m_client,
         &msg->id,
         msg->topic.c_str(),
