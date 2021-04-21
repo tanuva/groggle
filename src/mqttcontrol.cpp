@@ -51,36 +51,36 @@ void groggle::on_message(struct mosquitto */*client*/,
     SDL_Log("MQTT >> %s: %s", msg->topic, payload.c_str());
 
     const auto json = json::parse(payload);
+    State newState;
+    newState.color.setL(0.5f);
 
     if(const auto state = json.find("state"); state != json.end()) {
         const auto stateValue = state.value();
         if(stateValue.is_string()) {
             if(stateValue == "ON") {
-                mqtt->m_enabledCallback(true);
+                newState.enabled = true;
             } else if(stateValue == "OFF") {
-                mqtt->m_enabledCallback(false);
+                newState.enabled = false;
             }
         }
     }
-
-    Color newColor(0, 0, 1);
 
     if(const auto color = json.find("color"); color != json.end()) {
         const auto colorValue = color.value();
         if(const auto hue = colorValue.find("h"); hue != colorValue.end()) {
             if(hue.value().is_number()) {
-                newColor.setH(hue.value());
+                newState.color.setH(hue.value());
             }
         }
 
         if(const auto sat = colorValue.find("s"); sat != colorValue.end()) {
             if(sat.value().is_number()) {
-                newColor.setS(static_cast<float>(sat.value()) / 100.0f);
+                newState.color.setS(static_cast<float>(sat.value()) / 100.0f);
             }
         }
-
-        mqtt->m_colorCallback(newColor);
     }
+
+    mqtt->m_stateCallback(newState);
 }
 
 void MQTT::Message::setPayload(const std::string &s)
@@ -143,20 +143,20 @@ void MQTT::run()
     mosquitto_loop_forever(m_client, -1, 1);
 }
 
-void MQTT::publishState(const bool enabled, const Color &color)
+void MQTT::publish(const State &state)
 {
     std::shared_ptr<Message> msg = std::make_shared<Message>();
     msg->topic = TOPIC;
     // Creating the whole object in one statement interprets the outer object
     // as an array for some reason. Not sure how to do it in one step.
     json payload = {
-        { "state", enabled ? "ON" : "OFF" },
+        { "state", state.enabled ? "ON" : "OFF" },
         { "color", {
-            { "h", color.h() },
-            { "s", color.s() * 100 },
-            { "r", Color::f2uint8(color.r()) },
-            { "g", Color::f2uint8(color.g()) },
-            { "b", Color::f2uint8(color.b()) }
+            { "h", state.color.h() },
+            { "s", state.color.s() * 100 },
+            { "r", Color::f2uint8(state.color.r()) },
+            { "g", Color::f2uint8(state.color.g()) },
+            { "b", Color::f2uint8(state.color.b()) }
         }}
     };
     msg->setPayload(payload.dump());

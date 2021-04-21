@@ -132,21 +132,30 @@ void mqttLoop(std::shared_ptr<OlaOutput> olaOutput)
     MQTT mqtt;
     mqtt.init();
 
-    mqtt.setEnabledCallback([&mqtt, olaOutput](const bool enabled) {
-        SDL_Log(">> Enabled: %i", enabled);
-        olaOutput->setEnabled(enabled);
-        mqtt.publishState(olaOutput->isEnabled(), olaOutput->color());
-    });
+    mqtt.setStateCallback([&mqtt, olaOutput](const State &newState) {
+        SDL_Log(">> Enabled: %i Hue: %f Sat: %f",
+            newState.enabled, newState.color.h(), newState.color.s());
 
-    mqtt.setColorCallback([&mqtt, olaOutput](const Color &color) {
-        SDL_Log(">> Hue: %f Sat: %f", color.h(), color.s());
-        olaOutput->setColor(color);
-        mqtt.publishState(olaOutput->isEnabled(), olaOutput->color());
+        if (olaOutput->isEnabled() != newState.enabled) {
+            olaOutput->setEnabled(newState.enabled);
+        }
+
+        if (olaOutput->color() != newState.color) {
+            olaOutput->setColor(newState.color);
+        }
+
+        State acceptedState;
+        acceptedState.enabled = olaOutput->isEnabled();
+        acceptedState.color = olaOutput->color();
+        mqtt.publish(acceptedState);
     });
 
     // Publish initial properties
     mqtt.publishInfo();
-    mqtt.publishState(olaOutput->isEnabled(), olaOutput->color());
+    State initialState;
+    initialState.enabled = olaOutput->isEnabled();
+    initialState.color = olaOutput->color();
+    mqtt.publish(initialState);
     mqtt.run();
 }
 

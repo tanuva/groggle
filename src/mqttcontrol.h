@@ -17,20 +17,23 @@ namespace groggle
 void on_publish(struct mosquitto*, void*, int);
 void on_message(struct mosquitto*, void*, const struct mosquitto_message*);
 
+struct State {
+    bool enabled = true;
+    Color color;
+};
+
 class MQTT
 {
 public:
-    typedef std::function<void(const Color&)> ColorCb;
-    typedef std::function<void(bool)> EnabledCb;
+    typedef std::function<void(const State&)> StateCb;
 
     MQTT();
     ~MQTT();
     bool init();
     void run();
     void publishInfo();
-    void publishState(const bool enabled, const Color &color);
-    void setColorCallback(ColorCb cb) { m_colorCallback = cb; }
-    void setEnabledCallback(EnabledCb cb) { m_enabledCallback = cb; }
+    void publish(const State &s);
+    void setStateCallback(StateCb cb) { m_stateCallback = cb; }
 
 private:
     struct Message {
@@ -45,8 +48,8 @@ private:
     MQTT(const MQTT&) {}
     void publishMessage(const std::shared_ptr<Message> msg, const bool retain = false);
 
-    ColorCb m_colorCallback;
-    EnabledCb m_enabledCallback;
+    StateCb m_stateCallback;
+    State curState;
 
     const std::string TOPIC = "groggle";
     const std::string TOPIC_SET = TOPIC + "/set";
