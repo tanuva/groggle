@@ -20,6 +20,16 @@ public:
     Color(const float h, const float s, const float l);
     Color(const Color &other);
 
+    bool operator==(const Color &other) {
+        return m_h == other.h()
+            && m_s == other.s()
+            && m_l == other.l();
+    }
+
+    bool operator!=(const Color &other) {
+        return !operator==(other);
+    }
+
     float h() const { return m_h; }
     void setH(const float h) { m_h = h; toRgb(); }
     float s() const { return m_s; }
